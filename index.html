@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="一座被小猪占领的生活兴趣社区" />
+    <title>小猪书 - 发现软乎乎的生活</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="小猪书首页">
+        <span class="brand-snout">••</span>
+        <span>小猪书</span>
+      </a>
+
+      <nav class="side-nav" aria-label="主导航">
+        <button class="side-item active"><span>⌂</span>首页</button>
+        <button class="side-item"><span>◉</span>发现猪</button>
+        <button class="side-item"><span>◌</span>哼哼 AI</button>
+        <button class="side-item"><span>▶</span>短视频</button>
+        <button class="side-item"><span>▣</span>直播</button>
+        <button class="side-item"><span>＋</span>发布</button>
+        <button class="side-item"><span>♧</span>通知</button>
+        <button class="side-item"><span class="mini-avatar">🐽</span>我</button>
+      </nav>
+
+      <div class="side-bottom">
+        <button class="side-item"><span>☰</span>更多</button>
+        <button class="side-item"><span>ⓘ</span>关于我们</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <form class="search" id="search-form">
+          <button type="button" class="search-add" aria-label="添加">＋</button>
+          <input id="search-input" type="search" placeholder="搜搜今天的小猪在干嘛" autocomplete="off" />
+          <button class="search-submit" type="submit" aria-label="搜索">⌕</button>
+        </form>
+
+        <div class="categories" id="categories" aria-label="内容分类">
+          <button class="category active">推荐</button>
+          <button class="category">审猪</button>
+          <button class="category">软乎乎</button>
+          <button class="category">小猪日常</button>
+          <button class="category">萌宠</button>
+          <button class="category">美食</button>
+          <button class="category">穿搭</button>
+          <button class="category">旅行</button>
+          <button class="category">情感</button>
+          <button class="category">视频</button>
+        </div>
+      </header>
+
+      <section class="feed" id="feed" aria-live="polite"></section>
+      <div class="empty" id="empty" hidden>
+        <div>🐽</div>
+        <p>这只小猪躲起来了，换个关键词试试吧</p>
+      </div>
+    </main>
+
+    <div class="detail-layer" id="detail-layer" aria-hidden="true">
+      <button class="detail-close" id="detail-close" aria-label="关闭帖子">×</button>
+      <article class="detail-modal" role="dialog" aria-modal="true" aria-label="帖子详情">
+        <section class="media-panel" id="media-panel">
+          <button class="media-arrow prev" id="media-prev" aria-label="上一张">‹</button>
+          <div class="media-stage" id="media-stage"></div>
+          <button class="media-arrow next" id="media-next" aria-label="下一张">›</button>
+          <div class="media-count" id="media-count"></div>
+        </section>
+
+        <section class="detail-copy">
+          <header class="author-row">
+            <div class="author-avatar" id="detail-avatar">🐷</div>
+            <div class="author-name" id="detail-author"></div>
+            <button class="follow-btn" id="follow-btn">关注</button>
+          </header>
+
+          <div class="detail-scroll">
+            <h1 id="detail-title"></h1>
+            <p id="detail-body"></p>
+            <p class="detail-date" id="detail-date"></p>
+            <div class="comment-free">
+              <span>🐾</span>
+              <p>评论区暂时被小猪踩走了</p>
+            </div>
+          </div>
+
+          <footer class="detail-actions">
+            <div class="fake-input">说点什么…</div>
+            <button id="detail-like" aria-label="点赞">♡ <span></span></button>
+            <button aria-label="收藏">☆ <span>收藏</span></button>
+            <button aria-label="分享">↗ <span>分享</span></button>
+          </footer>
+        </section>
+      </article>
+    </div>
+
+    <div class="floating-tools">
+      <button id="to-top" aria-label="回到顶部">↑</button>
+      <button aria-label="反馈">◌</button>
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
