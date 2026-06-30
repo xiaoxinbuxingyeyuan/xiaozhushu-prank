@@ -38,10 +38,44 @@ const friendPosts = [
     id: "f05", kind: "image", title: "最老实的小猪！",
     body: "举起来的时候一声不吭，问什么都点头。看着确实很老实，但总感觉它还有事情瞒着我🐽\n\n#老实点 #最棒的小猪 #今日审猪",
     author: "诚实小猪鉴定处", avatar: "🧸", media: ["assets/friends/friend-5.jpg"]
+  },
+  {
+    id: "f06", kind: "image", title: "这只小猪会自己找勺子吗？",
+    body: "刚坐下就把勺子贴到脸上，疑似正在研究猪猪餐具的正确用法。画面里的小猪已经先学会了🐽\n\n#猪猪吃饭 #餐具研究 #审猪现场",
+    author: "猪猪用餐指南", avatar: "🥄", media: ["assets/friends/friend-6.jpg"]
+  },
+  {
+    id: "f07", kind: "image", title: "玩游戏输了以后的小猪 be like",
+    body: "说好只玩一局，输了以后原地委屈成一团。请不要难过，下一枚游戏币已经在路上了。\n\n#委屈小猪 #电玩城日常 #再来一局",
+    author: "小猪情绪观察员", avatar: "🎮", media: ["assets/friends/friend-7.jpg"]
+  },
+  {
+    id: "f08", kind: "image", title: "请不要捂住我的嘴巴2.0",
+    body: "刚准备发表重要意见，就被同伴当场强制静音。小猪明明还有很多话想说！\n\n#小猪发言中 #强制静音 #低质量猪图",
+    author: "猪言猪语记录处", avatar: "🤐", media: ["assets/friends/friend-8.jpg"]
+  },
+  {
+    id: "f09", kind: "image", title: "你这只正在吃饭的猪！",
+    body: "吃青菜时被当场抓拍，明明只是在认真补充膳食纤维，怎么突然就被懂猪帝识别出来了？\n\n#吃饭的猪 #今日菜谱 #懂猪帝识别成功",
+    author: "小猪食堂巡查员", avatar: "🥬", media: ["assets/friends/friend-9.jpg"]
+  },
+  {
+    id: "f10", kind: "image", title: "审猪积累39.0 头顶长出一只？",
+    body: "低头玩手机的功夫，头顶突然被不明生物占领。本人毫无察觉，仍在专心刷懂猪帝。\n\n#审猪积累 #头顶小猪 #毫无防备",
+    author: "头顶生物研究所", avatar: "🐾", media: ["assets/friends/friend-10.jpg"]
+  },
+  {
+    id: "f11", kind: "image", title: "小猪也会热到变形吗",
+    body: "出门五分钟就抱着风扇不撒手，旁边的小猪已经热到只剩下一个粉色背影。\n\n#夏日小猪 #降温失败 #风扇续命",
+    author: "小猪避暑办", avatar: "🌀", media: ["assets/friends/friend-11.jpg"]
+  },
+  {
+    id: "f12", kind: "image", title: "困困小猪找到专属枕头了",
+    body: "走到一半自动进入睡眠模式，靠上去三秒就不动了。懂猪帝鉴定：这是一只电量不足的小猪。\n\n#困困小猪 #自动休眠 #充电中",
+    author: "懂猪帝睡眠中心", avatar: "💤", media: ["assets/friends/friend-12.jpg"]
   }
 ];
 
-const insertPositions = [2, 5, 8, 12, 15];
 let posts = [];
 let activePost = null;
 let mediaIndex = 0;
@@ -76,8 +110,11 @@ function normalizePigPost(post) {
 }
 
 function mixPosts(pigPosts) {
-  const mixed = [...pigPosts];
-  friendPosts.forEach((friend, index) => mixed.splice(insertPositions[index], 0, friend));
+  const mixed = [];
+  pigPosts.forEach((post, index) => {
+    mixed.push(post);
+    if (friendPosts[index]) mixed.push(friendPosts[index]);
+  });
   return mixed;
 }
 
@@ -286,7 +323,7 @@ async function init() {
     const match = location.hash.match(/^#\/post\/(.+)$/);
     if (match) openPost(getPost(match[1]), false);
   } catch (error) {
-    feed.innerHTML = `<div class="empty"><div>🐷</div><p>小猪们加载失败了，请通过本地服务器打开网站。</p></div>`;
+    feed.innerHTML = `<div class="empty"><div>🐷</div><p>懂猪帝暂时没认出这只小猪，请刷新后再试。</p></div>`;
     console.error(error);
   }
 }

@@ -3,6 +3,8 @@
   color: #242424;
   background: #fff;
   font-synthesis: none;
+  --brand: #18a957;
+  --brand-soft: #eaf8f0;
 }
 
 * { box-sizing: border-box; }
@@ -35,16 +37,25 @@ button { border: 0; background: none; color: inherit; cursor: pointer; }
   align-items: center;
   align-self: flex-start;
   gap: 7px;
-  margin: 0 20px 54px;
+  margin: 0;
   padding: 9px 13px;
   border-radius: 999px;
   color: #fff;
-  background: #ff2442;
+  background: var(--brand);
   font-weight: 800;
   font-size: 20px;
   text-decoration: none;
   letter-spacing: -.5px;
-  box-shadow: 0 7px 18px rgba(255,36,66,.16);
+  box-shadow: 0 7px 18px rgba(24,169,87,.19);
+}
+
+.brand-block { margin: 0 20px 42px; }
+.brand-block p {
+  margin: 9px 2px 0;
+  color: #6a7c71;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: nowrap;
 }
 
 .brand-snout {
@@ -54,7 +65,7 @@ button { border: 0; background: none; color: inherit; cursor: pointer; }
   place-items: center;
   border-radius: 50%;
   background: #fff;
-  color: #ff2442;
+  color: var(--brand);
   font-size: 13px;
   letter-spacing: 2px;
   line-height: 1;
@@ -147,7 +158,7 @@ button { border: 0; background: none; color: inherit; cursor: pointer; }
   width: 30px; height: 3px;
   transform: translateX(-50%);
   border-radius: 2px;
-  background: #ff2442;
+  background: var(--brand);
 }
 
 .feed {
@@ -184,7 +195,7 @@ button { border: 0; background: none; color: inherit; cursor: pointer; }
   transition: transform .35s ease, filter .25s;
 }
 .card:hover .cover img { transform: scale(1.025); filter: brightness(.97); }
-.card:focus-visible .cover { outline: 3px solid rgba(255,36,66,.34); outline-offset: 3px; }
+.card:focus-visible .cover { outline: 3px solid rgba(24,169,87,.34); outline-offset: 3px; }
 
 .video-badge, .album-badge {
   position: absolute;
@@ -232,7 +243,7 @@ button { border: 0; background: none; color: inherit; cursor: pointer; }
 }
 .card-author { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-like { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; }
-.card-like.liked { color: #ff2442; }
+.card-like.liked { color: var(--brand); }
 
 .empty { padding: 100px 20px; text-align: center; color: #888; }
 .empty div { font-size: 58px; }
@@ -350,8 +361,8 @@ button { border: 0; background: none; color: inherit; cursor: pointer; }
   height: 34px;
   padding: 0 17px;
   border-radius: 17px;
-  color: #ff2442;
-  border: 1px solid #ff2442;
+  color: var(--brand);
+  border: 1px solid var(--brand);
   font-size: 13px;
 }
 .follow-btn.following { color: #777; border-color: #ddd; }
@@ -403,7 +414,7 @@ button { border: 0; background: none; color: inherit; cursor: pointer; }
   font-size: 21px;
 }
 .detail-actions button span { font-size: 12px; }
-.detail-actions button.liked { color: #ff2442; }
+.detail-actions button.liked { color: var(--brand); }
 
 .floating-tools {
   position: fixed;
@@ -431,7 +442,9 @@ body.modal-open { overflow: hidden; }
 
 @media (max-width: 1180px) {
   .sidebar { width: 92px; padding-inline: 13px; }
-  .brand { width: 54px; height: 54px; margin-inline: 6px; justify-content: center; padding: 0; }
+  .brand-block { margin: 0 6px 42px; }
+  .brand-block p { display: none; }
+  .brand { width: 54px; height: 54px; justify-content: center; padding: 0; }
   .brand > span:last-child, .side-item:not(.active) { font-size: 0; }
   .side-item { justify-content: center; padding: 0; gap: 0; }
   .side-item > span:first-child { font-size: 22px; }
