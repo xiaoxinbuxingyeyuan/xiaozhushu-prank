@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="懂猪帝日常记录 UI Demo：日记胶片风、杂志拼贴风、梦核小猪风。"
+    />
+    <title>懂猪帝 UI Demo - 日常记录设计稿</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body data-theme="diary">
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+    <div class="ambient ambient-three" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <header class="demo-hero">
+      <a class="back-link" href="../">← 回到当前版本</a>
+
+      <section class="hero-copy" aria-label="Demo 说明">
+        <div class="brand-lockup">
+          <span class="brand-mark">🐽</span>
+          <div>
+            <p>懂猪帝 UI Lab</p>
+            <h1>把朋友的日常记录成一窝小猪</h1>
+          </div>
+        </div>
+        <p class="hero-intro">
+          这里是不会影响正式主页的设计试验场。你可以直接切换三套视觉方向，看首页信息流、帖子详情和动效哪一种最适合这个小猪恶作剧网站。
+        </p>
+      </section>
+
+      <nav class="theme-tabs" aria-label="选择 UI 风格">
+        <button class="theme-tab active" type="button" data-theme="diary">
+          <span>01</span>
+          日记胶片风
+          <small>温暖相册 / 拍立得 / 生活感</small>
+        </button>
+        <button class="theme-tab" type="button" data-theme="collage">
+          <span>02</span>
+          杂志拼贴风
+          <small>贴纸批注 / 错落排版 / 恶作剧</small>
+        </button>
+        <button class="theme-tab" type="button" data-theme="dream">
+          <span>03</span>
+          梦核小猪风
+          <small>柔光渐变 / 漂浮装饰 / 氛围感</small>
+        </button>
+      </nav>
+    </header>
+
+    <section class="style-note" id="style-note" aria-live="polite"></section>
+
+    <main class="demo-shell">
+      <aside class="daily-panel" aria-label="日常记录信息">
+        <div class="panel-card today-card">
+          <span class="panel-kicker">TODAY</span>
+          <strong>今日猪猪指数</strong>
+          <div class="pig-meter" aria-label="今日猪猪指数 93%">
+            <span></span>
+          </div>
+          <p>93% 软乎乎，7% 正在装作不是小猪。</p>
+        </div>
+
+        <div class="panel-card note-card">
+          <span class="panel-kicker">NOTE</span>
+          <p>“所有日常都会被懂猪帝识别成：有点像猪。”</p>
+        </div>
+
+        <div class="panel-card tag-cloud" aria-label="标签">
+          <span>#审猪积累</span>
+          <span>#日常记录</span>
+          <span>#低质量猪图</span>
+          <span>#朋友混入中</span>
+        </div>
+      </aside>
+
+      <section class="feed-wrap">
+        <div class="feed-toolbar">
+          <div>
+            <span class="toolbar-eyebrow">RECENT MOMENTS</span>
+            <h2 id="feed-heading">今天也在认真审猪</h2>
+          </div>
+          <div class="fake-search">搜索：小猪 / 日常 / 朋友彩蛋</div>
+        </div>
+        <section class="feed" id="feed" aria-label="帖子信息流"></section>
+      </section>
+    </main>
+
+    <div class="detail-layer" id="detail-layer" aria-hidden="true">
+      <button class="detail-close" id="detail-close" type="button" aria-label="关闭帖子">×</button>
+      <article class="detail-modal" role="dialog" aria-modal="true" aria-label="帖子详情">
+        <section class="detail-media">
+          <button class="media-arrow prev" id="media-prev" type="button" aria-label="上一张">‹</button>
+          <div class="media-stage" id="media-stage"></div>
+          <button class="media-arrow next" id="media-next" type="button" aria-label="下一张">›</button>
+          <div class="media-count" id="media-count"></div>
+        </section>
+
+        <section class="detail-copy">
+          <header class="detail-author">
+            <span class="detail-avatar" id="detail-avatar">🐷</span>
+            <div>
+              <strong id="detail-author"></strong>
+              <p id="detail-date">今天 21:08 · 懂猪帝</p>
+            </div>
+            <button class="soft-button" type="button">收藏小猪</button>
+          </header>
+
+          <div class="detail-scroll">
+            <span class="detail-label">DAILY RECORD</span>
+            <h2 id="detail-title"></h2>
+            <p id="detail-body"></p>
+            <div class="comment-placeholder">
+              <span>🐖</span>
+              评论区先被小猪拱走了，demo 暂时只看正文。
+            </div>
+          </div>
+        </section>
+      </article>
+    </div>
+
+    <script src="demo.js" defer></script>
+  </body>
+</html>
