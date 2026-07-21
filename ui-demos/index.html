@@ -8,6 +8,8 @@
       content="懂猪帝日常记录 UI Demo：日记胶片风、杂志拼贴风、梦核小猪风。"
     />
     <title>懂猪帝 UI Demo - 日常记录设计稿</title>
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
     <link rel="stylesheet" href="demo.css" />
   </head>
   <body data-theme="diary">
@@ -30,6 +32,11 @@
         <p class="hero-intro">
           这里是不会影响正式主页的设计试验场。你可以直接切换三套视觉方向，看首页信息流、帖子详情和动效哪一种最适合这个小猪恶作剧网站。
         </p>
+        <div class="lab-actions">
+          <span class="mode-pill" id="mode-pill"><i class="ph ph-cloud-slash"></i><span>静态浏览</span></span>
+          <button class="lab-icon-button" id="profile-button" type="button"><i class="ph ph-user-circle"></i><span>我的资料</span></button>
+          <button class="lab-primary-button" id="publish-button" type="button"><i class="ph ph-plus"></i><span>记录今天</span></button>
+        </div>
       </section>
 
       <nav class="theme-tabs" aria-label="选择 UI 风格">
@@ -57,6 +64,7 @@
       <aside class="daily-panel" aria-label="日常记录信息">
         <div class="panel-card today-card">
           <span class="panel-kicker">TODAY</span>
+          <time id="today-date"></time>
           <strong>今日猪猪指数</strong>
           <div class="pig-meter" aria-label="今日猪猪指数 93%">
             <span></span>
@@ -69,12 +77,14 @@
           <p>“所有日常都会被懂猪帝识别成：有点像猪。”</p>
         </div>
 
-        <div class="panel-card tag-cloud" aria-label="标签">
-          <span>#审猪积累</span>
-          <span>#日常记录</span>
-          <span>#低质量猪图</span>
-          <span>#朋友混入中</span>
+        <div class="panel-card tag-cloud" aria-label="标签筛选">
+          <button class="tag-chip active" type="button" data-tag="">#全部记录</button>
+          <button class="tag-chip" type="button" data-tag="审猪积累">#审猪积累</button>
+          <button class="tag-chip" type="button" data-tag="日常记录">#日常记录</button>
+          <button class="tag-chip" type="button" data-tag="低质量猪图">#低质量猪图</button>
+          <button class="tag-chip" type="button" data-tag="朋友混入中">#朋友混入中</button>
         </div>
+        <button class="admin-entry" id="admin-entry" type="button" hidden><i class="ph ph-shield-check"></i> 管理员入口</button>
       </aside>
 
       <section class="feed-wrap">
@@ -83,14 +93,21 @@
             <span class="toolbar-eyebrow">RECENT MOMENTS</span>
             <h2 id="feed-heading">今天也在认真审猪</h2>
           </div>
-          <div class="fake-search">搜索：小猪 / 日常 / 朋友彩蛋</div>
+          <div class="feed-tools">
+            <label class="real-search"><i class="ph ph-magnifying-glass"></i><input id="search-input" type="search" placeholder="搜索：小猪 / 日常 / 朋友彩蛋" /></label>
+            <label class="date-filter" for="date-filter"><i class="ph ph-calendar-blank"></i><select id="date-filter"><option value="all">全部时间</option><option value="today">今天</option><option value="week">最近 7 天</option><option value="month">这个月</option></select></label>
+          </div>
         </div>
+        <p class="feed-summary" id="feed-summary">正在翻开今天的日记……</p>
+        <div class="offline-banner" id="offline-banner" role="status"><i class="ph ph-info"></i><div><strong>当前是静态浏览模式</strong><span>配置 Supabase 后即可让朋友发布、评论和共享点赞。</span></div><button type="button" id="offline-close" aria-label="关闭提示"><i class="ph ph-x"></i></button></div>
         <section class="feed" id="feed" aria-label="帖子信息流"></section>
+        <div class="feed-empty" id="feed-empty" hidden><i class="ph ph-images"></i><strong>这一页还没有小猪经过</strong><p>换个关键词，或者记录一条新的日常。</p></div>
+        <button class="load-more" id="load-more" type="button"><span>继续往后翻</span><i class="ph ph-arrow-down"></i></button>
       </section>
     </main>
 
-    <div class="detail-layer" id="detail-layer" aria-hidden="true">
-      <button class="detail-close" id="detail-close" type="button" aria-label="关闭帖子">×</button>
+    <div class="detail-layer dialog-layer" id="detail-layer" aria-hidden="true">
+      <button class="detail-close" id="detail-close" data-close="detail" type="button" aria-label="关闭帖子">×</button>
       <article class="detail-modal" role="dialog" aria-modal="true" aria-label="帖子详情">
         <section class="detail-media">
           <button class="media-arrow prev" id="media-prev" type="button" aria-label="上一张">‹</button>
@@ -106,22 +123,34 @@
               <strong id="detail-author"></strong>
               <p id="detail-date">今天 21:08 · 懂猪帝</p>
             </div>
-            <button class="soft-button" type="button">收藏小猪</button>
+            <button class="more-button" id="post-menu-button" type="button" aria-label="帖子操作"><i class="ph ph-dots-three"></i></button>
           </header>
 
           <div class="detail-scroll">
             <span class="detail-label">DAILY RECORD</span>
+            <div class="detail-tags" id="detail-tags"></div>
             <h2 id="detail-title"></h2>
             <p id="detail-body"></p>
-            <div class="comment-placeholder">
-              <span>🐖</span>
-              评论区先被小猪拱走了，demo 暂时只看正文。
-            </div>
+            <div class="post-actions"><button id="detail-like" type="button"><i class="ph ph-heart"></i><span>赞</span></button><button id="detail-save" type="button"><i class="ph ph-bookmark-simple"></i><span>收藏</span></button><button id="detail-report" type="button"><i class="ph ph-flag"></i><span>举报</span></button></div>
+            <section class="comments-section" aria-labelledby="comments-title"><div class="comments-heading"><h3 id="comments-title">评论</h3><span id="comment-count">0 条</span></div><div class="comments-list" id="comments-list"></div><div class="comments-empty" id="comments-empty"><i class="ph ph-chat-circle-dots"></i><p>还没有评论，来当第一只说话的小猪。</p></div></section>
           </div>
+          <form class="comment-composer" id="comment-form"><div class="replying-bar" id="replying-bar" hidden><span id="replying-text"></span><button type="button" id="reply-cancel" aria-label="取消回复"><i class="ph ph-x"></i></button></div><label for="comment-input" class="sr-only">写评论</label><textarea id="comment-input" maxlength="500" rows="1" placeholder="说点软乎乎的话……"></textarea><button class="comment-submit" type="submit" aria-label="发送评论"><i class="ph ph-paper-plane-tilt"></i></button></form>
         </section>
       </article>
     </div>
 
+    <div class="dialog-layer" id="publish-layer" aria-hidden="true"><button class="layer-backdrop" type="button" data-close="publish" aria-label="关闭发布窗口"></button><article class="publish-dialog" role="dialog" aria-modal="true" aria-labelledby="publish-title"><header class="dialog-header"><div><span class="panel-kicker">NEW DAILY RECORD</span><h2 id="publish-title">记录今天</h2></div><button class="dialog-close inline" type="button" data-close="publish" aria-label="关闭发布窗口"><i class="ph ph-x"></i></button></header><form id="publish-form"><label class="field-label" for="post-title">标题 <span>必填</span></label><input id="post-title" maxlength="80" required placeholder="今天发生了什么小猪事？" /><label class="field-label" for="post-body">正文</label><textarea id="post-body" maxlength="3000" rows="5" placeholder="写下这段日常，也可以什么都不解释。"></textarea><fieldset class="tag-picker"><legend class="field-label">标签 <span>最多 3 个</span></legend><label><input type="checkbox" name="tags" value="审猪积累" />审猪积累</label><label><input type="checkbox" name="tags" value="日常记录" />日常记录</label><label><input type="checkbox" name="tags" value="低质量猪图" />低质量猪图</label><label><input type="checkbox" name="tags" value="朋友混入中" />朋友混入中</label></fieldset><section class="media-upload"><div class="field-label">图片与短视频 <span>最多 9 图 + 1 个 50MB / 60 秒视频</span></div><label class="upload-drop" for="media-input" id="upload-drop"><i class="ph ph-camera-plus"></i><strong>选择照片或视频</strong><small>支持 JPG、PNG、WebP、MP4、WebM</small><input id="media-input" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple /></label><div class="media-previews" id="media-previews"></div></section><div class="upload-progress" id="upload-progress" hidden><div><span id="progress-label">准备上传</span><strong id="progress-percent">0%</strong></div><progress id="progress-bar" max="100" value="0"></progress></div><footer class="dialog-footer"><p><i class="ph ph-globe-hemisphere-west"></i> 发布后所有访问者都能看到</p><button class="lab-primary-button" id="publish-submit" type="submit">发布这条日记</button></footer></form></article></div>
+
+    <div class="dialog-layer" id="profile-layer" aria-hidden="true"><button class="layer-backdrop" type="button" data-close="profile" aria-label="关闭个人资料"></button><article class="small-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-title"><button class="dialog-close inline" type="button" data-close="profile" aria-label="关闭个人资料"><i class="ph ph-x"></i></button><span class="profile-preview avatar" id="profile-avatar-preview"></span><span class="panel-kicker">YOUR PIG IDENTITY</span><h2 id="profile-title">给自己取个名字</h2><p>不用邮箱。这个昵称只保存在当前匿名身份里。</p><form id="profile-form"><label class="field-label" for="profile-name">昵称</label><input id="profile-name" maxlength="24" required placeholder="例如：粉鼻子观察员" /><div id="turnstile-slot"></div><button class="lab-primary-button" type="submit">保存并继续</button></form></article></div>
+
+    <div class="dialog-layer" id="admin-layer" aria-hidden="true"><button class="layer-backdrop" type="button" data-close="admin" aria-label="关闭管理窗口"></button><article class="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-title"><header class="dialog-header"><div><span class="panel-kicker">MODERATION DESK</span><h2 id="admin-title">懂猪帝管理台</h2></div><button class="dialog-close inline" type="button" data-close="admin" aria-label="关闭管理窗口"><i class="ph ph-x"></i></button></header><section id="admin-login-view"><p>输入管理员邮箱，我们会发送一个登录链接。</p><form id="admin-login-form"><label class="field-label" for="admin-email">管理员邮箱</label><div class="inline-form"><input id="admin-email" type="email" required placeholder="you@example.com" /><button class="lab-primary-button" type="submit">发送链接</button></div></form></section><section id="admin-content-view" hidden><div class="admin-summary" id="admin-summary"></div><div class="admin-list" id="admin-list"></div></section></article></div>
+
+    <div class="action-menu" id="post-action-menu" hidden></div><div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <script src="demo.js" defer></script>
   </body>
 </html>

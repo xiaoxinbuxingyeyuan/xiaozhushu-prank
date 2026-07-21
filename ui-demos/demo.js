@@ -1,4 +1,19 @@
-const authorNames = {
+const CONFIG = window.DZD_CONFIG || {};
+const PAGE_SIZE = 12;
+const IMAGE_LIMIT = 9;
+const VIDEO_LIMIT = 1;
+const VIDEO_MAX_BYTES = 50 * 1024 * 1024;
+const VIDEO_MAX_SECONDS = 60;
+const LARGE_UPLOAD_THRESHOLD = 6 * 1024 * 1024;
+const BOOKMARK_KEY = "dzd-local-bookmarks-v2";
+
+const THEME_COPY = {
+  diary: { icon: "ph-camera", title: "日记胶片风", heading: "今天也在认真审猪", text: "温暖、真实、生活记录感；帖子像拍立得贴在日记本里。" },
+  collage: { icon: "ph-scissors", title: "杂志拼贴风", heading: "小猪恶作剧版面施工中", text: "错落卡片和贴纸批注，让朋友彩蛋更像一本手工小报。" },
+  dream: { icon: "ph-cloud", title: "梦核小猪风", heading: "软乎乎的梦里全是小猪", text: "柔光、毛玻璃和漂浮色块，保留最有氛围感的那套视觉。" }
+};
+
+const AUTHOR_NAMES = {
   author01: "浅草小猪观察员",
   author02: "审猪档案馆",
   author03: "Tom 的饲养员",
@@ -13,153 +28,94 @@ const authorNames = {
   author12: "今天也在审猪"
 };
 
-const friendPosts = [
-  {
-    id: "f01",
-    kind: "image",
-    title: "审猪积累38.0 小猪也要梳毛吗🐽",
-    body: "今天这只意外地很配合，刷了半天只会低头装没看见。越看越像刚洗完澡的小猪崽。\n\n#审猪积累 #小猪日常 #软乎乎",
-    author: "今日审猪员",
-    avatar: "🪥",
-    media: ["assets/friends/friend-1.jpg"]
-  },
-  {
-    id: "f02",
-    kind: "image",
-    title: "低质量猪图2.0",
-    body: "凌晨两点抓到一只贴脸观察的小猪。请不要靠镜头这么近，鼻子已经占满整个屏幕了。\n\n#低质量猪图 #猪鼻特写 #夜间观察",
-    author: "低像素猪",
-    avatar: "🌙",
-    media: ["assets/friends/friend-2.jpg"]
-  },
-  {
-    id: "f03",
-    kind: "image",
-    title: "猪猪发夹会自己挑主人吗？",
-    body: "本来只是随手夹上去，回头一看，好像被两只小猪认领了。今日份小猪好心情。\n\n#猪猪发夹 #小猪好心情 #今日穿搭",
-    author: "猪猪配饰研究员",
-    avatar: "🎀",
-    media: ["assets/friends/friend-3.jpg"]
-  },
-  {
-    id: "f04",
-    kind: "image",
-    title: "我想念一头在咖啡店睡着的猪",
-    body: "带小猪出门喝东西，五分钟后直接进入休眠模式。怎么叫都不醒，疑似电量不足。\n\n#咖啡店偶遇 #困困小猪 #充电中",
-    author: "困困小猪观察所",
-    avatar: "☕",
-    media: ["assets/friends/friend-4.jpg"]
-  },
-  {
-    id: "f05",
-    kind: "image",
-    title: "最老实的小猪！",
-    body: "举起来的时候一声不吭，问什么都点头。看着确实很老实，但总感觉它还有事情瞒着我。\n\n#老实点 #最棒的小猪 #今日审猪",
-    author: "诚实小猪鉴定处",
-    avatar: "🧸",
-    media: ["assets/friends/friend-5.jpg"]
-  },
-  {
-    id: "f06",
-    kind: "image",
-    title: "这只小猪会自己找勺子吗？",
-    body: "刚坐下就把勺子贴到脸上，疑似正在研究猪猪餐具的正确用法。画面里的小猪已经先学会了。\n\n#猪猪吃饭 #餐具研究 #审猪现场",
-    author: "猪猪用餐指南",
-    avatar: "🥄",
-    media: ["assets/friends/friend-6.jpg"]
-  },
-  {
-    id: "f07",
-    kind: "image",
-    title: "玩游戏输了以后的小猪 be like",
-    body: "说好只玩一局，输了以后原地委屈成一团。请不要难过，下一枚游戏币已经在路上了。\n\n#委屈小猪 #电玩城日常 #再来一局",
-    author: "小猪情绪观察员",
-    avatar: "🎮",
-    media: ["assets/friends/friend-7.jpg"]
-  },
-  {
-    id: "f08",
-    kind: "image",
-    title: "请不要捂住我的嘴巴2.0",
-    body: "刚准备发表重要意见，就被同伴当场强制静音。小猪明明还有很多话想说。\n\n#小猪发言中 #强制静音 #低质量猪图",
-    author: "猪言猪语记录处",
-    avatar: "🤐",
-    media: ["assets/friends/friend-8.jpg"]
-  },
-  {
-    id: "f09",
-    kind: "image",
-    title: "你这只正在吃饭的猪！",
-    body: "吃青菜时被当场抓拍，明明只是在认真补充膳食纤维，怎么突然就被懂猪帝识别出来了？\n\n#吃饭的猪 #今日菜谱 #懂猪帝识别成功",
-    author: "小猪食堂巡查员",
-    avatar: "🥬",
-    media: ["assets/friends/friend-9.jpg"]
-  },
-  {
-    id: "f10",
-    kind: "image",
-    title: "审猪积累39.0 头顶长出一只？",
-    body: "低头玩手机的功夫，头顶突然被不明生物占领。本人毫无察觉，仍在专心刷懂猪帝。\n\n#审猪积累 #头顶小猪 #毫无防备",
-    author: "头顶生物研究所",
-    avatar: "🐾",
-    media: ["assets/friends/friend-10.jpg"]
-  },
-  {
-    id: "f11",
-    kind: "image",
-    title: "小猪也会热到变形吗",
-    body: "出门五分钟就抱着风扇不撒手，旁边的小猪已经热到只剩下一个粉色背影。\n\n#夏日小猪 #降温失败 #风扇续命",
-    author: "小猪避暑办",
-    avatar: "🌀",
-    media: ["assets/friends/friend-11.jpg"]
-  },
-  {
-    id: "f12",
-    kind: "image",
-    title: "困困小猪找到专属枕头了",
-    body: "走到一半自动进入睡眠模式，靠上去三秒就不动了。懂猪帝鉴定：这是一只电量不足的小猪。\n\n#困困小猪 #自动休眠 #充电中",
-    author: "懂猪帝睡眠中心",
-    avatar: "💤",
-    media: ["assets/friends/friend-12.jpg"]
-  }
-];
+const FRIEND_POSTS = [
+  ["f01", "审猪积累38.0 小猪也要梳毛吗？", "今天这只意外地很配合，刷了半天只会低头装没看见。越看越像刚洗完澡的小猪崽。", "今日审猪员", "assets/friends/friend-1.jpg", ["审猪积累", "朋友混入中"]],
+  ["f02", "低质量猪图 2.0", "凌晨两点抓到一只贴脸观察的小猪。请不要靠镜头这么近，鼻子已经占满整个屏幕了。", "低像素猪", "assets/friends/friend-2.jpg", ["低质量猪图", "朋友混入中"]],
+  ["f03", "猪猪发夹会自己挑主人吗？", "本来只是随手夹上去，回头一看，好像被两只小猪认领了。今日份小猪好心情。", "猪猪配饰研究员", "assets/friends/friend-3.jpg", ["日常记录", "朋友混入中"]],
+  ["f04", "我想念一头在咖啡店睡着的猪", "带小猪出门喝东西，五分钟后直接进入休眠模式。怎么叫都不醒，疑似电量不足。", "困困小猪观察所", "assets/friends/friend-4.jpg", ["日常记录", "朋友混入中"]],
+  ["f05", "最老实的小猪！", "举起来的时候一声不吭，问什么都点头。看着确实很老实，但总感觉它还有事情瞒着我。", "诚实小猪鉴定处", "assets/friends/friend-5.jpg", ["审猪积累", "朋友混入中"]],
+  ["f06", "这只小猪会自己找勺子吗？", "刚坐下就把勺子贴到脸上，疑似正在研究猪猪餐具的正确用法。", "猪猪用餐指南", "assets/friends/friend-6.jpg", ["日常记录", "朋友混入中"]],
+  ["f07", "玩游戏输了以后的猪 be like", "说好只玩一局，输了以后原地委屈成一团。下一枚游戏币已经在路上了。", "小猪情绪观察员", "assets/friends/friend-7.jpg", ["低质量猪图", "朋友混入中"]],
+  ["f08", "请不要捂住我的嘴巴 2.0", "刚准备发表重要意见，就被同伴当场强制静音。小猪明明还有很多话想说。", "猪言猪语记录处", "assets/friends/friend-8.jpg", ["审猪积累", "朋友混入中"]],
+  ["f09", "你这只正在吃饭的猪！", "吃青菜时被当场抓拍，明明只是在认真补充膳食纤维。", "小猪食堂巡查员", "assets/friends/friend-9.jpg", ["日常记录", "朋友混入中"]],
+  ["f10", "审猪积累39.0 头顶长出一只？", "低头玩手机的功夫，头顶突然被不明生物占领。本人毫无察觉。", "头顶生物研究所", "assets/friends/friend-10.jpg", ["审猪积累", "朋友混入中"]],
+  ["f11", "小猪也会热到变形吗？", "出门五分钟就抱着风扇不撒手，旁边的小猪已经热到只剩粉色背影。", "小猪避暑办", "assets/friends/friend-11.jpg", ["日常记录", "朋友混入中"]],
+  ["f12", "困困小猪找到专属枕头了", "走到一半自动进入睡眠模式，靠上去三秒就不动了。", "懂猪帝睡眠中心", "assets/friends/friend-12.jpg", ["日常记录", "朋友混入中"]]
+].map((item, index) => ({
+  id: item[0],
+  legacyKey: item[0],
+  title: item[1],
+  body: `${item[2]}\n\n#${item[5].join(" #")}`,
+  author: item[3],
+  avatarSeed: `friend-${index + 1}`,
+  tags: item[5],
+  media: [{ kind: "image", url: item[4], sortOrder: 0 }],
+  createdAt: new Date(Date.now() - (index + 1) * 7_200_000).toISOString(),
+  likeCount: 8 + ((index * 13) % 47),
+  commentCount: index % 5,
+  source: "static"
+}));
 
-const themeCopy = {
-  diary: {
-    icon: "📷",
-    title: "日记胶片风",
-    heading: "今天也在认真审猪",
-    text: "偏温暖、真实、生活记录感；卡片像拍立得贴在日记本里，适合把朋友照片包装成“日常观察档案”。"
-  },
-  collage: {
-    icon: "✂️",
-    title: "杂志拼贴风",
-    heading: "小猪恶作剧版面施工中",
-    text: "更跳、更像手工拼贴和八卦小报；错落卡片、贴纸批注和轻微旋转会让 prank 的味道更明显。"
-  },
-  dream: {
-    icon: "🫧",
-    title: "梦核小猪风",
-    heading: "软乎乎的梦里全是小猪",
-    text: "柔光、毛玻璃、漂浮渐变，氛围更梦幻；适合做成一个看起来很认真但越看越离谱的日常站。"
-  }
+const state = {
+  client: null,
+  backend: false,
+  user: null,
+  profile: null,
+  isAdmin: false,
+  posts: [],
+  staticPosts: [],
+  page: 0,
+  hasMore: true,
+  loading: false,
+  query: "",
+  tag: "",
+  dateRange: "all",
+  activePost: null,
+  activeMedia: 0,
+  comments: [],
+  replyTo: null,
+  selectedFiles: [],
+  editingPost: null,
+  profileResolver: null,
+  captchaToken: null,
+  captchaWidget: null,
+  realtime: null,
+  realtimeTimer: null,
+  bookmarks: new Set(JSON.parse(localStorage.getItem(BOOKMARK_KEY) || "[]")),
+  likedPostIds: new Set()
 };
 
-const tagPool = ["审猪积累", "日常记录", "朋友混入中", "低质量猪图", "软乎乎", "今日小猪"];
-const datePool = ["刚刚", "2小时前", "昨天", "3天前", "本周", "夏日存档"];
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
 
-let posts = [];
-let activePost = null;
-let mediaIndex = 0;
-
-const feed = document.querySelector("#feed");
-const styleNote = document.querySelector("#style-note");
-const feedHeading = document.querySelector("#feed-heading");
-const detailLayer = document.querySelector("#detail-layer");
-const mediaStage = document.querySelector("#media-stage");
-const mediaPrev = document.querySelector("#media-prev");
-const mediaNext = document.querySelector("#media-next");
-const mediaCount = document.querySelector("#media-count");
+const els = {
+  feed: $("#feed"),
+  feedEmpty: $("#feed-empty"),
+  feedSummary: $("#feed-summary"),
+  loadMore: $("#load-more"),
+  search: $("#search-input"),
+  dateFilter: $("#date-filter"),
+  modePill: $("#mode-pill"),
+  offlineBanner: $("#offline-banner"),
+  detailLayer: $("#detail-layer"),
+  mediaStage: $("#media-stage"),
+  mediaPrev: $("#media-prev"),
+  mediaNext: $("#media-next"),
+  mediaCount: $("#media-count"),
+  commentsList: $("#comments-list"),
+  commentsEmpty: $("#comments-empty"),
+  commentInput: $("#comment-input"),
+  publishLayer: $("#publish-layer"),
+  publishForm: $("#publish-form"),
+  mediaInput: $("#media-input"),
+  mediaPreviews: $("#media-previews"),
+  uploadProgress: $("#upload-progress"),
+  profileLayer: $("#profile-layer"),
+  profileForm: $("#profile-form"),
+  adminLayer: $("#admin-layer"),
+  actionMenu: $("#post-action-menu"),
+  toastStack: $("#toast-stack")
+};
 
 function escapeHTML(value = "") {
   return String(value).replace(/[&<>"']/g, char => ({
@@ -171,25 +127,116 @@ function escapeHTML(value = "") {
   })[char]);
 }
 
-function assetUrl(path = "") {
-  if (/^(https?:|data:|blob:)/.test(path)) return path;
-  return `../${path.replace(/^\/+/, "")}`;
+function hashCode(value) {
+  return [...String(value || "pig")].reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0);
 }
 
-function normalizePigPost(post) {
-  const title = String(post.title || "今日份小猪").replace(/\s+-\s+小红书$/, "");
+function avatarPalette(seed) {
+  const palettes = [
+    ["#f7d0ca", "#8f3f3c"], ["#d8e4ed", "#29455f"], ["#f2dfad", "#795d23"],
+    ["#e4d8e9", "#5f4468"], ["#d7e8dd", "#35614a"], ["#f0d8c7", "#7b4d36"]
+  ];
+  const pair = palettes[Math.abs(hashCode(seed)) % palettes.length];
+  return `--avatar-bg:${pair[0]};--avatar-ink:${pair[1]}`;
+}
+
+function avatarHTML(seed, className = "avatar") {
+  return `<span class="${className}" style="${avatarPalette(seed)}" aria-hidden="true"><i class="ph-fill ph-piggy-bank"></i></span>`;
+}
+
+function applyTheme(theme) {
+  const copy = THEME_COPY[theme] || THEME_COPY.diary;
+  document.body.dataset.theme = theme;
+  $$(".theme-tab").forEach(button => button.classList.toggle("active", button.dataset.theme === theme));
+  const heading = $("#feed-heading");
+  if (heading) heading.textContent = copy.heading;
+  const note = $("#style-note");
+  if (note) note.innerHTML = `<i class="ph ${copy.icon}" aria-hidden="true"></i><p><strong>${copy.title}</strong>：${copy.text}</p><small>点击任意卡片查看详情</small>`;
+}
+
+function assetUrl(path = "") {
+  if (!path) return "";
+  if (/^(https?:|data:|blob:)/.test(path)) return path;
+  return `../${path.replace(/^\.\.\//, "").replace(/^\/+/, "")}`;
+}
+
+function formatDate(value, detailed = false) {
+  const date = new Date(value || Date.now());
+  if (Number.isNaN(date.getTime())) return "刚刚";
+  const diff = Date.now() - date.getTime();
+  if (diff < 60_000) return "刚刚";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} 小时前`;
+  return new Intl.DateTimeFormat("zh-CN", detailed
+    ? { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }
+    : { month: "short", day: "numeric" }).format(date);
+}
+
+function showToast(message, type = "info", icon = "ph-info") {
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="ph ${icon}" aria-hidden="true"></i><span>${escapeHTML(message)}</span>`;
+  els.toastStack.appendChild(toast);
+  window.setTimeout(() => toast.remove(), 4200);
+}
+
+function openLayer(name) {
+  const layer = $(`#${name}-layer`);
+  if (!layer) return;
+  layer.classList.add("open");
+  layer.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  window.setTimeout(() => layer.querySelector("button, input, textarea, select")?.focus(), 50);
+}
+
+function closeLayer(name) {
+  const layer = $(`#${name}-layer`);
+  if (!layer) return;
+  layer.classList.remove("open");
+  layer.setAttribute("aria-hidden", "true");
+  if (!$(".dialog-layer.open")) document.body.classList.remove("modal-open");
+  if (name === "detail") stopActiveVideo();
+  if (name === "profile" && state.profileResolver) {
+    state.profileResolver(false);
+    state.profileResolver = null;
+  }
+}
+
+function setBackendMode(online, message = "") {
+  state.backend = online;
+  els.modePill.classList.toggle("online", online);
+  els.modePill.innerHTML = online
+    ? `<i class="ph ph-cloud-check"></i><span>多人同步</span>`
+    : `<i class="ph ph-cloud-slash"></i><span>静态浏览</span>`;
+  els.offlineBanner.hidden = online;
+  if (!online && message) els.offlineBanner.querySelector("span").textContent = message;
+}
+
+function renderSkeletons() {
+  els.feed.innerHTML = Array.from({ length: 8 }, (_, index) =>
+    `<div class="skeleton-card" style="--height:${250 + (index % 4) * 70}px"></div>`).join("");
+}
+
+function normalizePigPost(post, index) {
+  const media = (post.media || []).map((url, sortOrder) => ({ kind: "image", url, sortOrder }));
+  if (post.video) media.push({ kind: "video", url: post.video, posterUrl: post.media?.[0], sortOrder: media.length });
   return {
-    ...post,
-    title,
+    id: post.id,
+    legacyKey: post.id,
+    title: String(post.title || "今日份小猪").replace(/\s+-\s+小红书$/, ""),
     body: post.body || "这条小猪记录暂时没有正文，但它看起来已经很会生活了。",
-    author: authorNames[post.author] || post.author || "懂猪帝观察员",
-    avatar: "🐷",
-    media: Array.isArray(post.media) ? post.media : [],
-    kind: post.video ? "video" : post.kind || "image"
+    author: AUTHOR_NAMES[post.author] || post.author || "懂猪帝观察员",
+    avatarSeed: post.author || post.id,
+    tags: [index % 2 ? "审猪积累" : "低质量猪图", "日常记录"],
+    media,
+    createdAt: new Date(Date.now() - index * 5_400_000).toISOString(),
+    likeCount: 12 + ((index * 17) % 83),
+    commentCount: 1 + (index % 7),
+    source: "static"
   };
 }
 
-function mixPosts(pigPosts) {
+function mixPosts(pigPosts, friendPosts) {
   const mixed = [];
   const max = Math.max(pigPosts.length, friendPosts.length);
   for (let index = 0; index < max; index += 1) {
@@ -199,175 +246,992 @@ function mixPosts(pigPosts) {
   return mixed;
 }
 
-function applyTheme(theme) {
-  document.body.dataset.theme = theme;
-  document.querySelectorAll(".theme-tab").forEach(button => {
-    button.classList.toggle("active", button.dataset.theme === theme);
-  });
-  const copy = themeCopy[theme];
-  feedHeading.textContent = copy.heading;
-  styleNote.innerHTML = `
-    <span>${copy.icon}</span>
-    <p><strong>${copy.title}</strong>：${copy.text}</p>
-    <small>点击任意卡片查看详情</small>
-  `;
+function mapDbPost(row) {
+  const profile = row.profile || row.profiles || {};
+  const mediaRows = row.media || row.post_media || [];
+  return {
+    id: row.id,
+    legacyKey: row.legacy_key,
+    title: row.title,
+    body: row.body || "",
+    authorId: row.author_id,
+    author: profile.display_name || row.author_name || "懂猪帝观察员",
+    avatarSeed: profile.avatar_seed || row.avatar_seed || row.id,
+    tags: row.tags || [],
+    media: mediaRows.sort((a, b) => a.sort_order - b.sort_order).map(item => ({
+      id: item.id,
+      kind: item.media_kind,
+      url: item.public_url || item.storage_path,
+      storagePath: item.storage_path,
+      posterUrl: item.poster_url,
+      sortOrder: item.sort_order
+    })),
+    createdAt: row.created_at,
+    likeCount: Number(row.likes?.[0]?.count || row.post_likes?.[0]?.count || 0),
+    commentCount: Number(row.comments?.[0]?.count || 0),
+    status: row.status,
+    source: "db"
+  };
+}
+
+function postCover(post) {
+  return post.media?.[0] || { kind: "image", url: "" };
 }
 
 function cardTemplate(post, index) {
-  const cover = assetUrl(post.media?.[0] || "");
-  const safeTitle = escapeHTML(post.title);
-  const badge = post.kind === "video"
-    ? "▶ 视频"
-    : post.media.length > 1
-      ? `${post.media.length} 张`
-      : "图片";
-  const delay = Math.min(index * 34, 420);
-  const tilt = ((index % 7) - 3) * 0.9;
-  const tag = tagPool[index % tagPool.length];
-  const date = datePool[index % datePool.length];
+  const cover = postCover(post);
+  const isVideo = cover.kind === "video";
+  const coverUrl = assetUrl(cover.posterUrl || cover.url);
+  const saved = state.bookmarks.has(post.id);
+  const liked = state.likedPostIds.has(post.id);
+  const mediaCount = post.media?.length || 0;
   return `
-    <article
-      class="post-card"
-      tabindex="0"
-      data-post-id="${escapeHTML(post.id)}"
-      style="--delay:${delay}ms; --tilt:${tilt}deg"
-      aria-label="打开帖子：${safeTitle}"
-    >
+      <article class="post-card" tabindex="0" data-post-id="${escapeHTML(post.id)}" style="--delay:${Math.min(index * 35, 350)}ms;--tilt:${((index % 7) - 3) * 0.9}deg" aria-label="打开帖子：${escapeHTML(post.title)}">
       <div class="card-media">
-        <img src="${cover}" alt="${safeTitle}" loading="lazy" />
-        <span class="media-badge">${badge}</span>
-        <span class="pig-sticker">🐽 ${tag}</span>
+        ${coverUrl ? `<img src="${escapeHTML(coverUrl)}" alt="${escapeHTML(post.title)}" loading="lazy" />` : ""}
+        <span class="media-badge"><i class="ph ${isVideo ? "ph-play" : mediaCount > 1 ? "ph-stack" : "ph-image"}"></i>${isVideo ? "视频" : mediaCount > 1 ? `${mediaCount} 项` : "照片"}</span>
       </div>
       <div class="card-copy">
-        <div class="card-kicker">#${tag}</div>
-        <h3 class="card-title">${safeTitle}</h3>
+        <div class="card-tags">${(post.tags || []).slice(0, 2).map(tag => `<span>#${escapeHTML(tag)}</span>`).join("")}</div>
+        <h3 class="card-title">${escapeHTML(post.title)}</h3>
         <footer class="card-footer">
-          <span class="card-avatar">${escapeHTML(post.avatar || "🐷")}</span>
+          ${avatarHTML(post.avatarSeed)}
           <span class="card-author">${escapeHTML(post.author)}</span>
-          <span class="card-date">${date}</span>
+          <span class="card-stats">
+            <span class="${liked ? "liked" : ""}"><i class="ph${liked ? "-fill" : ""} ph-heart"></i>${post.likeCount || 0}</span>
+            <span><i class="ph ph-chat-circle"></i>${post.commentCount || 0}</span>
+            ${saved ? `<span class="saved"><i class="ph-fill ph-bookmark-simple"></i></span>` : ""}
+          </span>
         </footer>
       </div>
-    </article>
-  `;
+    </article>`;
 }
 
 function renderFeed() {
-  feed.innerHTML = posts.map(cardTemplate).join("");
+  els.feed.innerHTML = state.posts.map(cardTemplate).join("");
+  els.feedEmpty.hidden = state.posts.length > 0;
+  els.loadMore.hidden = !state.hasMore || state.posts.length === 0;
+  els.feedSummary.textContent = state.backend
+    ? `已同步 ${state.posts.length} 条记录${state.query ? ` · 搜索“${state.query}”` : ""}`
+    : `静态档案 · 已翻到 ${state.posts.length} 条记录`;
 }
 
-function getPost(id) {
-  return posts.find(post => post.id === id);
+function staticMatches(post) {
+  const query = state.query.toLowerCase();
+  const text = `${post.title} ${post.body} ${post.author} ${(post.tags || []).join(" ")}`.toLowerCase();
+  if (query && !text.includes(query)) return false;
+  if (state.tag && !(post.tags || []).includes(state.tag)) return false;
+  const created = new Date(post.createdAt).getTime();
+  if (state.dateRange === "today" && created < Date.now() - 86_400_000) return false;
+  if (state.dateRange === "week" && created < Date.now() - 7 * 86_400_000) return false;
+  if (state.dateRange === "month" && created < Date.now() - 31 * 86_400_000) return false;
+  return true;
+}
+
+async function loadStaticPosts(reset = true) {
+  if (!state.staticPosts.length) {
+    const response = await fetch("../pig-posts.json");
+    if (!response.ok) throw new Error("静态帖子加载失败");
+    const pigPosts = (await response.json()).map(normalizePigPost);
+    state.staticPosts = mixPosts(pigPosts, FRIEND_POSTS);
+  }
+  if (reset) {
+    state.page = 0;
+    state.posts = [];
+  }
+  const filtered = state.staticPosts.filter(staticMatches);
+  const start = state.page * PAGE_SIZE;
+  state.posts.push(...filtered.slice(start, start + PAGE_SIZE));
+  state.page += 1;
+  state.hasMore = start + PAGE_SIZE < filtered.length;
+  renderFeed();
+}
+
+function applyBackendFilters(query) {
+  let result = query.eq("status", "published");
+  const cleanSearch = state.query.replace(/[%_,()]/g, " ").trim();
+  if (cleanSearch) result = result.or(`title.ilike.%${cleanSearch}%,body.ilike.%${cleanSearch}%,author_name.ilike.%${cleanSearch}%`);
+  if (state.tag) result = result.contains("tags", [state.tag]);
+  if (state.dateRange !== "all") {
+    const days = { today: 1, week: 7, month: 31 }[state.dateRange];
+    result = result.gte("created_at", new Date(Date.now() - days * 86_400_000).toISOString());
+  }
+  return result;
+}
+
+async function loadBackendPosts(reset = true) {
+  if (reset) {
+    state.page = 0;
+    state.posts = [];
+  }
+  const from = state.page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  let query = state.client
+    .from("posts")
+    .select(`id,legacy_key,title,body,tags,author_id,author_name,avatar_seed,created_at,status,
+      profile:profiles!posts_author_id_fkey(display_name,avatar_seed,role),
+      media:post_media(id,media_kind,public_url,storage_path,poster_url,sort_order),
+      comments(count),likes:post_likes(count)`)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  query = applyBackendFilters(query);
+  const { data, error } = await query;
+  if (error) throw error;
+  const mapped = (data || []).map(mapDbPost);
+  state.posts.push(...mapped);
+  state.page += 1;
+  state.hasMore = mapped.length === PAGE_SIZE;
+  await loadLikedIds(mapped.map(post => post.id));
+  renderFeed();
+}
+
+async function loadLikedIds(postIds) {
+  if (!state.user || !postIds.length) return;
+  const { data } = await state.client.from("post_likes").select("post_id").eq("user_id", state.user.id).in("post_id", postIds);
+  for (const item of data || []) state.likedPostIds.add(item.post_id);
+}
+
+async function refreshFeed() {
+  if (state.loading) return;
+  state.loading = true;
+  renderSkeletons();
+  try {
+    if (state.backend) await loadBackendPosts(true);
+    else await loadStaticPosts(true);
+  } catch (error) {
+    console.warn(error);
+    setBackendMode(false, "多人数据暂时不可用，已切换到静态档案。");
+    await loadStaticPosts(true);
+  } finally {
+    state.loading = false;
+  }
+}
+
+async function loadMore() {
+  if (state.loading || !state.hasMore) return;
+  state.loading = true;
+  els.loadMore.disabled = true;
+  try {
+    if (state.backend) await loadBackendPosts(false);
+    else await loadStaticPosts(false);
+  } catch (error) {
+    showToast(error.message || "加载失败，请再试一次", "error", "ph-warning-circle");
+  } finally {
+    state.loading = false;
+    els.loadMore.disabled = false;
+  }
 }
 
 function renderMedia() {
-  if (!activePost) return;
-  const isVideo = activePost.kind === "video" && activePost.video;
-
-  if (isVideo) {
-    mediaStage.innerHTML = `
-      <video
-        src="${assetUrl(activePost.video)}"
-        poster="${assetUrl(activePost.media[0])}"
-        controls
-        playsinline
-        preload="metadata"
-      ></video>
-    `;
-    mediaPrev.hidden = true;
-    mediaNext.hidden = true;
-    mediaCount.hidden = false;
-    mediaCount.textContent = "视频";
+  const post = state.activePost;
+  if (!post) return;
+  const media = post.media || [];
+  const current = media[state.activeMedia];
+  if (!current) {
+    els.mediaStage.innerHTML = `<div class="comments-empty"><i class="ph ph-image-broken"></i><p>这条记录没有媒体</p></div>`;
     return;
   }
-
-  const images = activePost.media || [];
-  mediaStage.innerHTML = `<img src="${assetUrl(images[mediaIndex])}" alt="${escapeHTML(activePost.title)} 第 ${mediaIndex + 1} 张" />`;
-  const multiple = images.length > 1;
-  mediaPrev.hidden = !multiple;
-  mediaNext.hidden = !multiple;
-  mediaCount.hidden = !multiple;
-  mediaCount.textContent = `${mediaIndex + 1} / ${images.length}`;
+  const url = assetUrl(current.url);
+  els.mediaStage.innerHTML = current.kind === "video"
+    ? `<video src="${escapeHTML(url)}" poster="${escapeHTML(assetUrl(current.posterUrl || ""))}" controls playsinline preload="metadata"></video>`
+    : `<img src="${escapeHTML(url)}" alt="${escapeHTML(post.title)} · 第 ${state.activeMedia + 1} 项" />`;
+  const multiple = media.length > 1;
+  els.mediaPrev.hidden = !multiple;
+  els.mediaNext.hidden = !multiple;
+  els.mediaCount.hidden = !multiple;
+  els.mediaCount.textContent = `${state.activeMedia + 1} / ${media.length}`;
 }
 
-function openPost(post) {
-  if (!post) return;
-  activePost = post;
-  mediaIndex = 0;
-  document.querySelector("#detail-avatar").textContent = post.avatar || "🐷";
-  document.querySelector("#detail-author").textContent = post.author;
-  document.querySelector("#detail-title").textContent = post.title;
-  document.querySelector("#detail-body").textContent = post.body;
-  document.querySelector("#detail-date").textContent = `${datePool[Math.abs(hashCode(post.id)) % datePool.length]} · 懂猪帝日常`;
-  renderMedia();
-  detailLayer.classList.add("open");
-  detailLayer.setAttribute("aria-hidden", "false");
-  document.body.classList.add("modal-open");
-  document.querySelector("#detail-close").focus();
-}
-
-function closePost() {
-  const video = mediaStage.querySelector("video");
-  if (video) video.pause();
-  activePost = null;
-  mediaStage.innerHTML = "";
-  detailLayer.classList.remove("open");
-  detailLayer.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("modal-open");
+function stopActiveVideo() {
+  els.mediaStage.querySelector("video")?.pause();
 }
 
 function changeMedia(delta) {
-  if (!activePost || activePost.kind === "video") return;
-  mediaIndex = (mediaIndex + delta + activePost.media.length) % activePost.media.length;
+  if (!state.activePost?.media?.length) return;
+  stopActiveVideo();
+  state.activeMedia = (state.activeMedia + delta + state.activePost.media.length) % state.activePost.media.length;
   renderMedia();
 }
 
-function hashCode(value) {
-  return [...String(value)].reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0);
+function renderDetail(post) {
+  state.activePost = post;
+  state.activeMedia = 0;
+  $("#detail-avatar").setAttribute("style", avatarPalette(post.avatarSeed));
+  $("#detail-avatar").innerHTML = `<i class="ph-fill ph-piggy-bank"></i>`;
+  $("#detail-author").textContent = post.author;
+  $("#detail-date").textContent = `${formatDate(post.createdAt, true)} · 懂猪帝日记`;
+  $("#detail-title").textContent = post.title;
+  $("#detail-body").textContent = post.body || "这条记录没有留下正文。";
+  $("#detail-tags").innerHTML = (post.tags || []).map(tag => `<span>#${escapeHTML(tag)}</span>`).join("");
+  updateDetailActions();
+  renderMedia();
 }
 
-document.querySelectorAll(".theme-tab").forEach(button => {
-  button.addEventListener("click", () => applyTheme(button.dataset.theme));
-});
+function updateDetailActions() {
+  const post = state.activePost;
+  if (!post) return;
+  const liked = state.likedPostIds.has(post.id);
+  const saved = state.bookmarks.has(post.id);
+  $("#detail-like").classList.toggle("active", liked);
+  $("#detail-like").innerHTML = `<i class="ph${liked ? "-fill" : ""} ph-heart"></i><span>${post.likeCount || 0} 赞</span>`;
+  $("#detail-save").classList.toggle("active", saved);
+  $("#detail-save").innerHTML = `<i class="ph${saved ? "-fill" : ""} ph-bookmark-simple"></i><span>${saved ? "已收藏" : "收藏"}</span>`;
+}
 
-feed.addEventListener("click", event => {
-  const card = event.target.closest("[data-post-id]");
-  if (card) openPost(getPost(card.dataset.postId));
-});
+async function openPost(post) {
+  if (!post) return;
+  renderDetail(post);
+  state.comments = [];
+  renderComments();
+  openLayer("detail");
+  await loadComments(post.id);
+}
 
-feed.addEventListener("keydown", event => {
-  if (event.key !== "Enter" && event.key !== " ") return;
-  const card = event.target.closest("[data-post-id]");
-  if (!card) return;
+async function loadComments(postId) {
+  if (!state.backend || state.activePost?.source !== "db") {
+    state.comments = [];
+    renderComments(true);
+    return;
+  }
+  const { data, error } = await state.client
+    .from("comments")
+    .select(`id,post_id,author_id,parent_id,body,status,created_at,updated_at,
+      profile:profiles!comments_author_id_fkey(display_name,avatar_seed,role)`)
+    .eq("post_id", postId)
+    .eq("status", "published")
+    .order("created_at", { ascending: true });
+  if (error) {
+    showToast("评论加载失败", "error", "ph-warning-circle");
+    return;
+  }
+  state.comments = data || [];
+  renderComments();
+}
+
+function commentTemplate(comment, replies = []) {
+  const profile = comment.profile || {};
+  const canEdit = state.user?.id === comment.author_id;
+  const canDelete = canEdit || state.isAdmin;
+  return `
+    <article class="comment-item" data-comment-id="${escapeHTML(comment.id)}">
+      ${avatarHTML(profile.avatar_seed || comment.author_id)}
+      <div class="comment-main">
+        <div class="comment-meta"><strong>${escapeHTML(profile.display_name || "匿名小猪")}</strong><time>${formatDate(comment.created_at)}</time></div>
+        <p>${escapeHTML(comment.body)}</p>
+        <div class="comment-actions">
+          ${comment.parent_id ? "" : `<button type="button" data-comment-action="reply">回复</button>`}
+          ${canEdit ? `<button type="button" data-comment-action="edit">编辑</button>` : ""}
+          ${canDelete ? `<button type="button" data-comment-action="delete">删除</button>` : `<button type="button" data-comment-action="report">举报</button>`}
+        </div>
+        ${replies.length ? `<div class="comment-replies">${replies.map(reply => commentTemplate(reply)).join("")}</div>` : ""}
+      </div>
+    </article>`;
+}
+
+function renderComments(readOnly = false) {
+  const roots = state.comments.filter(comment => !comment.parent_id);
+  els.commentsList.innerHTML = roots.map(root => commentTemplate(root, state.comments.filter(comment => comment.parent_id === root.id))).join("");
+  els.commentsEmpty.hidden = state.comments.length > 0;
+  if (readOnly) els.commentsEmpty.innerHTML = `<i class="ph ph-cloud-slash"></i><p>静态浏览模式暂不读取评论。</p>`;
+  else els.commentsEmpty.innerHTML = `<i class="ph ph-chat-circle-dots"></i><p>还没有评论，来当第一只说话的小猪。</p>`;
+  $("#comment-count").textContent = `${state.comments.length} 条`;
+  els.commentInput.disabled = readOnly;
+  els.commentInput.placeholder = readOnly ? "配置 Supabase 后即可评论" : "说点软乎乎的话……";
+}
+
+async function submitComment(event) {
   event.preventDefault();
-  openPost(getPost(card.dataset.postId));
-});
+  const body = els.commentInput.value.trim();
+  if (!body) return;
+  if (!(await ensureIdentity())) return;
+  const payload = {
+    post_id: state.activePost.id,
+    author_id: state.user.id,
+    parent_id: state.replyTo?.id || null,
+    body,
+    status: "published"
+  };
+  const button = event.submitter || event.target.querySelector("button[type=submit]");
+  button.disabled = true;
+  const { error } = await state.client.from("comments").insert(payload);
+  button.disabled = false;
+  if (error) {
+    showToast(error.message || "评论发送失败", "error", "ph-warning-circle");
+    return;
+  }
+  els.commentInput.value = "";
+  clearReply();
+  await loadComments(state.activePost.id);
+  state.activePost.commentCount = state.comments.length;
+  renderFeed();
+}
 
-document.querySelector("#detail-close").addEventListener("click", closePost);
-detailLayer.addEventListener("click", event => {
-  if (event.target === detailLayer) closePost();
-});
-mediaPrev.addEventListener("click", () => changeMedia(-1));
-mediaNext.addEventListener("click", () => changeMedia(1));
+function startReply(comment) {
+  const name = comment.profile?.display_name || "匿名小猪";
+  state.replyTo = comment.parent_id ? state.comments.find(item => item.id === comment.parent_id) : comment;
+  $("#replying-bar").hidden = false;
+  $("#replying-text").textContent = `回复 ${name}`;
+  els.commentInput.focus();
+}
 
-document.addEventListener("keydown", event => {
-  if (!activePost) return;
-  if (event.key === "Escape") closePost();
-  if (event.key === "ArrowLeft") changeMedia(-1);
-  if (event.key === "ArrowRight") changeMedia(1);
-});
+function clearReply() {
+  state.replyTo = null;
+  $("#replying-bar").hidden = true;
+}
+
+function startCommentEdit(comment, item) {
+  const main = item.querySelector(".comment-main");
+  if (main.querySelector(".comment-edit-form")) return;
+  const form = document.createElement("form");
+  form.className = "comment-edit-form";
+  form.innerHTML = `<textarea maxlength="500">${escapeHTML(comment.body)}</textarea><div><button type="submit">保存</button><button type="button" data-cancel-edit>取消</button></div>`;
+  main.appendChild(form);
+  form.querySelector("textarea").focus();
+  form.querySelector("[data-cancel-edit]").addEventListener("click", () => form.remove());
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const body = form.querySelector("textarea").value.trim();
+    if (!body) return;
+    const { error } = await state.client.from("comments").update({ body }).eq("id", comment.id);
+    if (error) showToast("评论修改失败", "error", "ph-warning-circle");
+    else await loadComments(state.activePost.id);
+  });
+}
+
+async function deleteComment(comment) {
+  if (!window.confirm("确定删除这条评论吗？")) return;
+  const action = state.isAdmin && comment.author_id !== state.user?.id
+    ? state.client.from("comments").update({ status: "hidden" }).eq("id", comment.id)
+    : state.client.from("comments").delete().eq("id", comment.id);
+  const { error } = await action;
+  if (error) showToast("评论删除失败", "error", "ph-warning-circle");
+  else await loadComments(state.activePost.id);
+}
+
+async function createReport(targetType, targetId) {
+  if (!(await ensureIdentity())) return;
+  const { error } = await state.client.from("reports").insert({
+    reporter_id: state.user.id,
+    target_type: targetType,
+    target_id: targetId,
+    reason: "用户举报"
+  });
+  showToast(error ? "举报提交失败" : "已提交给管理员处理", error ? "error" : "success", error ? "ph-warning-circle" : "ph-check-circle");
+}
+
+async function toggleLike() {
+  const post = state.activePost;
+  if (!post || !(await ensureIdentity())) return;
+  const liked = state.likedPostIds.has(post.id);
+  const query = liked
+    ? state.client.from("post_likes").delete().eq("post_id", post.id).eq("user_id", state.user.id)
+    : state.client.from("post_likes").insert({ post_id: post.id, user_id: state.user.id });
+  const { error } = await query;
+  if (error) {
+    showToast("点赞没有成功，请再试一次", "error", "ph-warning-circle");
+    return;
+  }
+  if (liked) {
+    state.likedPostIds.delete(post.id);
+    post.likeCount = Math.max(0, post.likeCount - 1);
+  } else {
+    state.likedPostIds.add(post.id);
+    post.likeCount += 1;
+  }
+  updateDetailActions();
+  renderFeed();
+}
+
+function toggleBookmark() {
+  const id = state.activePost?.id;
+  if (!id) return;
+  if (state.bookmarks.has(id)) state.bookmarks.delete(id);
+  else state.bookmarks.add(id);
+  localStorage.setItem(BOOKMARK_KEY, JSON.stringify([...state.bookmarks]));
+  updateDetailActions();
+  renderFeed();
+}
+
+function backendConfigured() {
+  return Boolean(window.supabase?.createClient && /^https:\/\/.+\.supabase\.co$/.test(CONFIG.supabaseUrl || "") && CONFIG.supabasePublishableKey);
+}
+
+async function loadCurrentProfile() {
+  if (!state.user) return null;
+  const { data } = await state.client.from("profiles").select("id,display_name,avatar_seed,role").eq("id", state.user.id).maybeSingle();
+  state.profile = data || null;
+  state.isAdmin = data?.role === "admin";
+  updateProfileButton();
+  return data;
+}
+
+function updateProfileButton() {
+  const button = $("#profile-button");
+  if (state.profile?.display_name) {
+    button.innerHTML = `<span class="avatar" style="${avatarPalette(state.profile.avatar_seed)}"><i class="ph-fill ph-piggy-bank"></i></span>`;
+    button.title = state.profile.display_name;
+  } else {
+    button.innerHTML = `<i class="ph ph-user-circle"></i>`;
+    button.title = "个人资料";
+  }
+}
+
+async function openProfileDialog(required = false) {
+  if (!state.backend) {
+    showToast("配置 Supabase 后才能创建匿名身份", "error", "ph-cloud-slash");
+    return false;
+  }
+  $("#profile-name").value = state.profile?.display_name || "";
+  const seed = state.profile?.avatar_seed || crypto.randomUUID();
+  $("#profile-avatar-preview").dataset.seed = seed;
+  $("#profile-avatar-preview").setAttribute("style", avatarPalette(seed));
+  $("#profile-avatar-preview").innerHTML = `<i class="ph-fill ph-piggy-bank"></i>`;
+  renderTurnstile();
+  openLayer("profile");
+  if (!required) return true;
+  return new Promise(resolve => { state.profileResolver = resolve; });
+}
+
+function renderTurnstile() {
+  const slot = $("#turnstile-slot");
+  slot.innerHTML = "";
+  state.captchaToken = null;
+  if (!CONFIG.turnstileSiteKey || !window.turnstile) return;
+  state.captchaWidget = window.turnstile.render(slot, {
+    sitekey: CONFIG.turnstileSiteKey,
+    theme: "light",
+    callback: token => { state.captchaToken = token; }
+  });
+}
+
+async function saveProfile(event) {
+  event.preventDefault();
+  const name = $("#profile-name").value.trim();
+  if (!name) return;
+  if (CONFIG.turnstileSiteKey && !state.captchaToken && !state.user) {
+    showToast("请先完成人机验证", "error", "ph-shield-warning");
+    return;
+  }
+  const submit = event.submitter;
+  submit.disabled = true;
+  try {
+    if (!state.user) {
+      const options = state.captchaToken ? { captchaToken: state.captchaToken } : undefined;
+      const { data, error } = await state.client.auth.signInAnonymously({ options });
+      if (error) throw error;
+      state.user = data.user;
+    }
+    const avatarSeed = $("#profile-avatar-preview").dataset.seed || crypto.randomUUID();
+    const { data, error } = await state.client.from("profiles").update({
+      display_name: name,
+      avatar_seed: avatarSeed
+    }).eq("id", state.user.id).select("id,display_name,avatar_seed,role").single();
+    if (error) throw error;
+    state.profile = data;
+    state.isAdmin = data.role === "admin";
+    updateProfileButton();
+    const resolver = state.profileResolver;
+    state.profileResolver = null;
+    closeLayer("profile");
+    resolver?.(true);
+    showToast("匿名身份已保存", "success", "ph-check-circle");
+  } catch (error) {
+    showToast(error.message || "身份保存失败", "error", "ph-warning-circle");
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function ensureIdentity() {
+  if (!state.backend) {
+    showToast("当前是静态浏览模式，配置 Supabase 后即可互动", "error", "ph-cloud-slash");
+    return false;
+  }
+  if (state.user && state.profile?.display_name && state.profile.display_name !== "匿名小猪") return true;
+  return openProfileDialog(true);
+}
+
+function cleanupSelectedFiles() {
+  for (const item of state.selectedFiles) URL.revokeObjectURL(item.previewUrl);
+  state.selectedFiles = [];
+  els.mediaInput.value = "";
+  renderFilePreviews();
+}
+
+async function videoDuration(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("无法读取视频"));
+    };
+    video.src = url;
+  });
+}
+
+async function addFiles(files) {
+  const next = [...files];
+  const existingImages = state.selectedFiles.filter(item => item.kind === "image").length;
+  const existingVideos = state.selectedFiles.filter(item => item.kind === "video").length;
+  const imageFiles = next.filter(file => file.type.startsWith("image/"));
+  const videoFiles = next.filter(file => file.type.startsWith("video/"));
+  if (existingImages + imageFiles.length > IMAGE_LIMIT) return showToast("最多选择 9 张图片", "error", "ph-warning-circle");
+  if (existingVideos + videoFiles.length > VIDEO_LIMIT) return showToast("每条帖子最多 1 个视频", "error", "ph-warning-circle");
+  for (const file of next) {
+    if (!/^(image\/(jpeg|png|webp)|video\/(mp4|webm))$/.test(file.type)) {
+      showToast(`${file.name} 的格式暂不支持`, "error", "ph-warning-circle");
+      continue;
+    }
+    const kind = file.type.startsWith("video/") ? "video" : "image";
+    if (kind === "video") {
+      if (file.size > VIDEO_MAX_BYTES) {
+        showToast(`${file.name} 超过 50MB`, "error", "ph-warning-circle");
+        continue;
+      }
+      try {
+        if (await videoDuration(file) > VIDEO_MAX_SECONDS) {
+          showToast(`${file.name} 超过 60 秒`, "error", "ph-warning-circle");
+          continue;
+        }
+      } catch (error) {
+        showToast(error.message, "error", "ph-warning-circle");
+        continue;
+      }
+    }
+    state.selectedFiles.push({ file, kind, previewUrl: URL.createObjectURL(file) });
+  }
+  renderFilePreviews();
+}
+
+function renderFilePreviews() {
+  els.mediaPreviews.innerHTML = state.selectedFiles.map((item, index) => `
+    <div class="media-preview" data-file-index="${index}">
+      ${item.kind === "video" ? `<video src="${item.previewUrl}" muted></video>` : `<img src="${item.previewUrl}" alt="待上传图片 ${index + 1}" />`}
+      <button type="button" data-remove-file="${index}" aria-label="移除 ${escapeHTML(item.file.name)}"><i class="ph ph-x"></i></button>
+    </div>`).join("");
+}
+
+async function compressImage(file) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 2200 / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d", { alpha: false }).drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/webp", 0.84));
+  if (!blob || blob.size >= file.size) return file;
+  return new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" });
+}
+
+function safeFileName(name) {
+  const extension = (name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return `${crypto.randomUUID()}.${extension || "bin"}`;
+}
+
+function setProgress(label, percent) {
+  els.uploadProgress.hidden = false;
+  $("#progress-label").textContent = label;
+  $("#progress-percent").textContent = `${Math.round(percent)}%`;
+  $("#progress-bar").value = percent;
+}
+
+async function uploadStandard(path, file) {
+  const { error } = await state.client.storage.from("post-media").upload(path, file, {
+    contentType: file.type,
+    cacheControl: "31536000",
+    upsert: false
+  });
+  if (error) throw error;
+}
+
+async function uploadTus(path, file, progressCallback) {
+  if (!window.tus?.Upload) throw new Error("可恢复上传组件没有加载");
+  const { data: { session } } = await state.client.auth.getSession();
+  if (!session?.access_token) throw new Error("匿名会话已失效");
+  const projectId = new URL(CONFIG.supabaseUrl).hostname.split(".")[0];
+  await new Promise((resolve, reject) => {
+    const upload = new window.tus.Upload(file, {
+      endpoint: `https://${projectId}.storage.supabase.co/storage/v1/upload/resumable`,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: { authorization: `Bearer ${session.access_token}` },
+      uploadDataDuringCreation: true,
+      removeFingerprintOnSuccess: true,
+      chunkSize: 6 * 1024 * 1024,
+      metadata: {
+        bucketName: "post-media",
+        objectName: path,
+        contentType: file.type,
+        cacheControl: "31536000"
+      },
+      onError: reject,
+      onProgress: (uploaded, total) => progressCallback((uploaded / total) * 100),
+      onSuccess: resolve
+    });
+    upload.findPreviousUploads().then(previous => {
+      if (previous[0]) upload.resumeFromPreviousUpload(previous[0]);
+      upload.start();
+    }).catch(reject);
+  });
+}
+
+async function uploadMedia(postId) {
+  const uploadedPaths = [];
+  const rows = [];
+  for (let index = 0; index < state.selectedFiles.length; index += 1) {
+    const selected = state.selectedFiles[index];
+    const file = selected.kind === "image" ? await compressImage(selected.file) : selected.file;
+    const path = `${state.user.id}/${postId}/${safeFileName(file.name)}`;
+    const base = (index / state.selectedFiles.length) * 100;
+    const share = 100 / state.selectedFiles.length;
+    setProgress(`正在上传 ${index + 1} / ${state.selectedFiles.length}`, base);
+    if (file.size > LARGE_UPLOAD_THRESHOLD) {
+      await uploadTus(path, file, current => setProgress(`正在上传 ${index + 1} / ${state.selectedFiles.length}`, base + (current / 100) * share));
+    } else {
+      await uploadStandard(path, file);
+      setProgress(`已上传 ${index + 1} / ${state.selectedFiles.length}`, base + share);
+    }
+    uploadedPaths.push(path);
+    const { data } = state.client.storage.from("post-media").getPublicUrl(path);
+    rows.push({
+      post_id: postId,
+      owner_id: state.user.id,
+      storage_path: path,
+      public_url: data.publicUrl,
+      media_kind: selected.kind,
+      mime_type: file.type,
+      size_bytes: file.size,
+      sort_order: index
+    });
+  }
+  return { rows, uploadedPaths };
+}
+
+async function submitPost(event) {
+  event.preventDefault();
+  if (!(await ensureIdentity())) return;
+  const title = $("#post-title").value.trim();
+  const body = $("#post-body").value.trim();
+  const tags = $$('input[name="tags"]:checked').map(input => input.value).slice(0, 3);
+  if (!title) return;
+  const submit = $("#publish-submit");
+  submit.disabled = true;
+  let postId = state.editingPost?.id || null;
+  let uploadedPaths = [];
+  try {
+    if (state.editingPost) {
+      const { error } = await state.client.from("posts").update({ title, body, tags }).eq("id", postId);
+      if (error) throw error;
+      showToast("日记已经更新", "success", "ph-check-circle");
+    } else {
+      if (!state.selectedFiles.length) throw new Error("请至少选择一张图片或一个视频");
+      const { data: post, error } = await state.client.from("posts").insert({
+        author_id: state.user.id,
+        author_name: state.profile.display_name,
+        avatar_seed: state.profile.avatar_seed,
+        title,
+        body,
+        tags,
+        status: "draft"
+      }).select("id").single();
+      if (error) throw error;
+      postId = post.id;
+      const uploaded = await uploadMedia(postId);
+      uploadedPaths = uploaded.uploadedPaths;
+      const { error: mediaError } = await state.client.from("post_media").insert(uploaded.rows);
+      if (mediaError) throw mediaError;
+      const { error: publishError } = await state.client.from("posts").update({ status: "published" }).eq("id", postId);
+      if (publishError) throw publishError;
+      showToast("这条日记已经发布", "success", "ph-check-circle");
+    }
+    closeLayer("publish");
+    resetPublishForm();
+    await refreshFeed();
+  } catch (error) {
+    if (uploadedPaths.length) await state.client.storage.from("post-media").remove(uploadedPaths);
+    if (postId && !state.editingPost) await state.client.from("posts").delete().eq("id", postId);
+    showToast(error.message || "发布失败，请重试", "error", "ph-warning-circle");
+    setProgress("上传失败，可以重新发布", 0);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+function resetPublishForm() {
+  els.publishForm.reset();
+  cleanupSelectedFiles();
+  state.editingPost = null;
+  $("#publish-title").textContent = "记录今天";
+  $("#publish-submit").textContent = "发布这条日记";
+  $(".media-upload").hidden = false;
+  els.uploadProgress.hidden = true;
+}
+
+async function openPublish(post = null) {
+  if (!(await ensureIdentity())) return;
+  resetPublishForm();
+  state.editingPost = post;
+  if (post) {
+    $("#publish-title").textContent = "修改这条日记";
+    $("#publish-submit").textContent = "保存修改";
+    $("#post-title").value = post.title;
+    $("#post-body").value = post.body;
+    for (const input of $$('input[name="tags"]')) input.checked = post.tags.includes(input.value);
+    $(".media-upload").hidden = true;
+  }
+  openLayer("publish");
+}
+
+async function deletePost(post) {
+  if (!window.confirm(state.isAdmin && post.authorId !== state.user?.id ? "确定隐藏这条帖子吗？" : "确定删除这条帖子及媒体吗？")) return;
+  let error;
+  if (state.isAdmin && post.authorId !== state.user?.id) {
+    ({ error } = await state.client.from("posts").update({ status: "hidden" }).eq("id", post.id));
+  } else {
+    const paths = post.media.map(item => item.storagePath).filter(Boolean);
+    if (paths.length) await state.client.storage.from("post-media").remove(paths);
+    ({ error } = await state.client.from("posts").delete().eq("id", post.id));
+  }
+  if (error) showToast("帖子删除失败", "error", "ph-warning-circle");
+  else {
+    closeLayer("detail");
+    showToast("帖子已移出日记", "success", "ph-check-circle");
+    await refreshFeed();
+  }
+}
+
+function showPostMenu(button) {
+  const post = state.activePost;
+  if (!post) return;
+  const owner = state.user?.id === post.authorId;
+  const canModerate = state.isAdmin;
+  const actions = [];
+  if (owner) actions.push(["edit-post", "ph-pencil-simple", "编辑帖子", ""]);
+  if (owner || canModerate) actions.push(["delete-post", "ph-trash", owner ? "删除帖子" : "隐藏帖子", "danger"]);
+  if (!owner) actions.push(["report-post", "ph-flag", "举报帖子", ""]);
+  els.actionMenu.innerHTML = actions.map(action => `<button type="button" data-menu-action="${action[0]}" class="${action[3]}"><i class="ph ${action[1]}"></i>${action[2]}</button>`).join("");
+  const rect = button.getBoundingClientRect();
+  els.actionMenu.style.top = `${Math.min(window.innerHeight - 170, rect.bottom + 6)}px`;
+  els.actionMenu.style.left = `${Math.max(10, rect.right - 150)}px`;
+  els.actionMenu.hidden = false;
+}
+
+async function openAdmin() {
+  if (!state.backend) {
+    showToast("请先配置 Supabase", "error", "ph-cloud-slash");
+    return;
+  }
+  openLayer("admin");
+  $("#admin-login-view").hidden = state.isAdmin;
+  $("#admin-content-view").hidden = !state.isAdmin;
+  if (state.isAdmin) await loadAdminReports();
+}
+
+async function sendAdminLink(event) {
+  event.preventDefault();
+  const email = $("#admin-email").value.trim();
+  const redirect = `${location.origin}${location.pathname}?admin=1`;
+  const { error } = await state.client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect } });
+  showToast(error ? error.message : "登录链接已发送，请检查邮箱", error ? "error" : "success", error ? "ph-warning-circle" : "ph-envelope-simple");
+}
+
+async function loadAdminReports() {
+  const { data, error } = await state.client.from("reports").select("id,target_type,target_id,reason,status,created_at").eq("status", "pending").order("created_at", { ascending: false }).limit(50);
+  if (error) return showToast("举报列表加载失败", "error", "ph-warning-circle");
+  $("#admin-summary").innerHTML = `
+    <div><strong>${data.length}</strong><span>待处理举报</span></div>
+    <div><strong>${state.posts.length}</strong><span>当前页帖子</span></div>
+    <div><strong>在线</strong><span>管理员权限</span></div>`;
+  $("#admin-list").innerHTML = data.length ? data.map(item => `
+    <div class="admin-list-item" data-report-id="${item.id}">
+      <div><strong>${item.target_type === "post" ? "帖子举报" : "评论举报"}</strong><p>${escapeHTML(item.reason)} · ${formatDate(item.created_at)}</p></div>
+      <button type="button" data-resolve-report="${item.id}">标记已处理</button>
+    </div>`).join("") : `<div class="comments-empty"><i class="ph ph-check-circle"></i><p>暂时没有待处理举报</p></div>`;
+}
+
+async function resolveReport(id) {
+  const { error } = await state.client.from("reports").update({ status: "resolved", resolved_at: new Date().toISOString(), resolved_by: state.user.id }).eq("id", id);
+  if (error) showToast("处理失败", "error", "ph-warning-circle");
+  else await loadAdminReports();
+}
+
+function subscribeRealtime() {
+  if (!state.backend) return;
+  state.realtime?.unsubscribe();
+  state.realtime = state.client.channel("dzd-live")
+    .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, scheduleRealtimeRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "post_likes" }, scheduleRealtimeRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, payload => {
+      if (state.activePost && (!payload.new?.post_id || payload.new.post_id === state.activePost.id || payload.old?.post_id === state.activePost.id)) {
+        loadComments(state.activePost.id);
+      }
+      scheduleRealtimeRefresh();
+    })
+    .subscribe();
+}
+
+function scheduleRealtimeRefresh() {
+  window.clearTimeout(state.realtimeTimer);
+  state.realtimeTimer = window.setTimeout(() => refreshFeed(), 550);
+}
+
+async function initializeBackend() {
+  if (!backendConfigured()) return false;
+  try {
+    state.client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+    let { data: { session } } = await state.client.auth.getSession();
+    if (!session && !CONFIG.turnstileSiteKey) {
+      const { data, error } = await state.client.auth.signInAnonymously();
+      if (error) throw error;
+      session = data.session;
+    }
+    state.user = session?.user || null;
+    if (state.user) await loadCurrentProfile();
+    state.client.auth.onAuthStateChange((_event, nextSession) => {
+      state.user = nextSession?.user || null;
+      if (state.user) window.setTimeout(() => loadCurrentProfile(), 0);
+    });
+    setBackendMode(true);
+    subscribeRealtime();
+    return true;
+  } catch (error) {
+    console.warn(error);
+    return false;
+  }
+}
+
+function bindEvents() {
+  let searchTimer;
+  $$(".theme-tab").forEach(button => button.addEventListener("click", () => applyTheme(button.dataset.theme)));
+  const scheduleSearch = () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+      state.query = els.search.value.trim();
+      refreshFeed();
+    }, 280);
+  };
+  els.search.addEventListener("input", scheduleSearch);
+  els.search.addEventListener("search", scheduleSearch);
+  els.search.addEventListener("change", scheduleSearch);
+  els.dateFilter.addEventListener("change", () => {
+    state.dateRange = els.dateFilter.value;
+    refreshFeed();
+  });
+  $$(".tag-chip").forEach(button => button.addEventListener("click", () => {
+    $$(".tag-chip").forEach(item => item.classList.toggle("active", item === button));
+    state.tag = button.dataset.tag;
+    refreshFeed();
+  }));
+  els.loadMore.addEventListener("click", loadMore);
+  $("#offline-close").addEventListener("click", () => { els.offlineBanner.hidden = true; });
+  $("#publish-button").addEventListener("click", () => openPublish());
+  $("#profile-button").addEventListener("click", () => state.backend ? openProfileDialog(false) : showToast("配置 Supabase 后即可创建匿名身份", "error", "ph-cloud-slash"));
+  $("#admin-entry").addEventListener("click", openAdmin);
+  $("#admin-login-form").addEventListener("submit", sendAdminLink);
+  els.publishForm.addEventListener("submit", submitPost);
+  els.profileForm.addEventListener("submit", saveProfile);
+  $("#comment-form").addEventListener("submit", submitComment);
+  $("#reply-cancel").addEventListener("click", clearReply);
+  els.mediaPrev.addEventListener("click", () => changeMedia(-1));
+  els.mediaNext.addEventListener("click", () => changeMedia(1));
+  $("#detail-like").addEventListener("click", toggleLike);
+  $("#detail-save").addEventListener("click", toggleBookmark);
+  $("#detail-report").addEventListener("click", () => state.activePost && createReport("post", state.activePost.id));
+  $("#post-menu-button").addEventListener("click", event => showPostMenu(event.currentTarget));
+  els.mediaInput.addEventListener("change", event => addFiles(event.target.files));
+  const drop = $("#upload-drop");
+  drop.addEventListener("dragover", event => { event.preventDefault(); drop.classList.add("dragging"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("dragging"));
+  drop.addEventListener("drop", event => { event.preventDefault(); drop.classList.remove("dragging"); addFiles(event.dataTransfer.files); });
+  els.mediaPreviews.addEventListener("click", event => {
+    const button = event.target.closest("[data-remove-file]");
+    if (!button) return;
+    const [removed] = state.selectedFiles.splice(Number(button.dataset.removeFile), 1);
+    if (removed) URL.revokeObjectURL(removed.previewUrl);
+    renderFilePreviews();
+  });
+  els.feed.addEventListener("click", event => {
+    const card = event.target.closest("[data-post-id]");
+    if (card) openPost(state.posts.find(post => post.id === card.dataset.postId));
+  });
+  els.feed.addEventListener("keydown", event => {
+    if (!["Enter", " "].includes(event.key)) return;
+    const card = event.target.closest("[data-post-id]");
+    if (!card) return;
+    event.preventDefault();
+    openPost(state.posts.find(post => post.id === card.dataset.postId));
+  });
+  els.commentsList.addEventListener("click", event => {
+    const button = event.target.closest("[data-comment-action]");
+    const item = event.target.closest("[data-comment-id]");
+    if (!button || !item) return;
+    const comment = state.comments.find(value => value.id === item.dataset.commentId);
+    if (!comment) return;
+    const action = button.dataset.commentAction;
+    if (action === "reply") startReply(comment);
+    if (action === "edit") startCommentEdit(comment, item);
+    if (action === "delete") deleteComment(comment);
+    if (action === "report") createReport("comment", comment.id);
+  });
+  els.actionMenu.addEventListener("click", event => {
+    const action = event.target.closest("[data-menu-action]")?.dataset.menuAction;
+    els.actionMenu.hidden = true;
+    if (action === "edit-post") { closeLayer("detail"); openPublish(state.activePost); }
+    if (action === "delete-post") deletePost(state.activePost);
+    if (action === "report-post") createReport("post", state.activePost.id);
+  });
+  $("#admin-list").addEventListener("click", event => {
+    const id = event.target.closest("[data-resolve-report]")?.dataset.resolveReport;
+    if (id) resolveReport(id);
+  });
+  $$('[data-close]').forEach(button => button.addEventListener("click", () => closeLayer(button.dataset.close)));
+  document.addEventListener("click", event => {
+    if (!event.target.closest("#post-action-menu") && !event.target.closest("#post-menu-button")) els.actionMenu.hidden = true;
+  });
+  document.addEventListener("keydown", event => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      els.search.focus();
+    }
+    if (event.key === "Escape") {
+      const open = $(".dialog-layer.open");
+      if (open) closeLayer(open.id.replace("-layer", ""));
+    }
+    if (state.activePost && event.key === "ArrowLeft") changeMedia(-1);
+    if (state.activePost && event.key === "ArrowRight") changeMedia(1);
+  });
+  $$('input[name="tags"]').forEach(input => input.addEventListener("change", () => {
+    const checked = $$('input[name="tags"]:checked');
+    if (checked.length > 3) {
+      input.checked = false;
+      showToast("最多选择 3 个标签", "error", "ph-warning-circle");
+    }
+  }));
+}
 
 async function init() {
   applyTheme("diary");
-  try {
-    const response = await fetch("../pig-posts.json");
-    if (!response.ok) throw new Error("pig-posts.json 加载失败");
-    const pigPosts = (await response.json()).map(normalizePigPost);
-    posts = mixPosts(pigPosts);
-  } catch (error) {
-    console.warn(error);
-    posts = friendPosts;
-  }
-  renderFeed();
+  const now = new Date();
+  const weekday = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][now.getDay()];
+  $("#today-date").dateTime = now.toISOString();
+  $("#today-date").textContent = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日 · ${weekday}`;
+  $("#admin-entry").hidden = !new URLSearchParams(location.search).has("admin");
+  bindEvents();
+  renderSkeletons();
+  const online = await initializeBackend();
+  if (!online) setBackendMode(false);
+  await refreshFeed();
+  if (online && new URLSearchParams(location.search).has("admin")) openAdmin();
 }
 
 init();
