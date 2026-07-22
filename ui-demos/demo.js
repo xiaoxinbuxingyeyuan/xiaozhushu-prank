@@ -278,6 +278,17 @@ function postCover(post) {
   return post.media?.[0] || { kind: "image", url: "" };
 }
 
+function postLabel(post) {
+  const title = String(post.title || "").trim();
+  const body = String(post.body || "").trim().replace(/\s+/g, " ");
+  return title || body.slice(0, 48) || (post.media?.length ? "一条媒体记录" : "一条日常记录");
+}
+
+function postExcerpt(post, length = 150) {
+  const body = String(post.body || "").trim();
+  return body.length > length ? `${body.slice(0, length).trim()}…` : body;
+}
+
 function cardTemplate(post, index) {
   const cover = postCover(post);
   const isVideo = cover.kind === "video";
@@ -285,15 +296,19 @@ function cardTemplate(post, index) {
   const saved = state.bookmarks.has(post.id);
   const liked = state.likedPostIds.has(post.id);
   const mediaCount = post.media?.length || 0;
+  const label = postLabel(post);
+  const excerpt = postExcerpt(post);
+  const hasTitle = Boolean(String(post.title || "").trim());
   return `
-      <article class="post-card" tabindex="0" data-post-id="${escapeHTML(post.id)}" style="--delay:${Math.min(index * 35, 350)}ms;--tilt:${((index % 7) - 3) * 0.9}deg" aria-label="打开帖子：${escapeHTML(post.title)}">
-      <div class="card-media">
-        ${coverUrl ? `<img src="${escapeHTML(coverUrl)}" alt="${escapeHTML(post.title)}" loading="lazy" />` : ""}
+      <article class="post-card${coverUrl ? "" : " text-only-card"}" tabindex="0" data-post-id="${escapeHTML(post.id)}" style="--delay:${Math.min(index * 35, 350)}ms;--tilt:${((index % 7) - 3) * 0.9}deg" aria-label="打开帖子：${escapeHTML(label)}">
+      ${coverUrl ? `<div class="card-media">
+        ${isVideo && !cover.posterUrl ? `<video src="${escapeHTML(cover.url)}" muted playsinline preload="metadata"></video>` : `<img src="${escapeHTML(coverUrl)}" alt="${escapeHTML(label)}" loading="lazy" />`}
         <span class="media-badge"><i class="ph ${isVideo ? "ph-play" : mediaCount > 1 ? "ph-stack" : "ph-image"}"></i>${isVideo ? "视频" : mediaCount > 1 ? `${mediaCount} 项` : "照片"}</span>
-      </div>
+      </div>` : ""}
       <div class="card-copy">
         <div class="card-tags">${(post.tags || []).slice(0, 2).map(tag => `<span>#${escapeHTML(tag)}</span>`).join("")}</div>
-        <h3 class="card-title">${escapeHTML(post.title)}</h3>
+        ${hasTitle ? `<h3 class="card-title">${escapeHTML(post.title)}</h3>` : ""}
+        ${excerpt ? `<p class="card-excerpt${hasTitle ? "" : " standalone"}">${escapeHTML(excerpt)}</p>` : ""}
         <footer class="card-footer">
           ${avatarHTML(post.avatarSeed)}
           <span class="card-author">${escapeHTML(post.author)}</span>
@@ -429,14 +444,23 @@ function renderMedia() {
   if (!post) return;
   const media = post.media || [];
   const current = media[state.activeMedia];
+  els.mediaStage.classList.remove("zoomed");
   if (!current) {
-    els.mediaStage.innerHTML = `<div class="comments-empty"><i class="ph ph-image-broken"></i><p>这条记录没有媒体</p></div>`;
+    els.mediaStage.innerHTML = "";
+    els.mediaPrev.hidden = true;
+    els.mediaNext.hidden = true;
+    els.mediaCount.hidden = true;
+    $("#media-zoom").hidden = true;
     return;
   }
   const url = assetUrl(current.url);
+  const label = postLabel(post);
   els.mediaStage.innerHTML = current.kind === "video"
     ? `<video src="${escapeHTML(url)}" poster="${escapeHTML(assetUrl(current.posterUrl || ""))}" controls playsinline preload="metadata"></video>`
-    : `<img src="${escapeHTML(url)}" alt="${escapeHTML(post.title)} · 第 ${state.activeMedia + 1} 项" />`;
+    : `<img src="${escapeHTML(url)}" alt="${escapeHTML(label)} · 第 ${state.activeMedia + 1} 项" title="点击查看原图尺寸" />`;
+  const zoomButton = $("#media-zoom");
+  zoomButton.hidden = current.kind !== "image";
+  zoomButton.innerHTML = `<i class="ph ph-arrows-out"></i><span>原图</span>`;
   const multiple = media.length > 1;
   els.mediaPrev.hidden = !multiple;
   els.mediaNext.hidden = !multiple;
@@ -446,6 +470,17 @@ function renderMedia() {
 
 function stopActiveVideo() {
   els.mediaStage.querySelector("video")?.pause();
+}
+
+function toggleMediaZoom() {
+  const image = els.mediaStage.querySelector("img");
+  if (!image) return;
+  const zoomed = els.mediaStage.classList.toggle("zoomed");
+  const button = $("#media-zoom");
+  button.innerHTML = zoomed
+    ? `<i class="ph ph-arrows-in"></i><span>适应</span>`
+    : `<i class="ph ph-arrows-out"></i><span>原图</span>`;
+  image.title = zoomed ? "点击恢复适应窗口" : "点击查看原图尺寸";
 }
 
 function changeMedia(delta) {
@@ -462,8 +497,15 @@ function renderDetail(post) {
   $("#detail-avatar").innerHTML = `<i class="ph-fill ph-piggy-bank"></i>`;
   $("#detail-author").textContent = post.author;
   $("#detail-date").textContent = `${formatDate(post.createdAt, true)} · 懂猪帝日记`;
-  $("#detail-title").textContent = post.title;
-  $("#detail-body").textContent = post.body || "这条记录没有留下正文。";
+  const hasMedia = Boolean(post.media?.length);
+  const detailTitle = $("#detail-title");
+  const detailBody = $("#detail-body");
+  $("#detail-layer").classList.toggle("text-only", !hasMedia);
+  $(".detail-media").hidden = !hasMedia;
+  detailTitle.textContent = post.title || "";
+  detailTitle.hidden = !String(post.title || "").trim();
+  detailBody.textContent = post.body || "";
+  detailBody.hidden = !String(post.body || "").trim();
   $("#detail-tags").innerHTML = (post.tags || []).map(tag => `<span>#${escapeHTML(tag)}</span>`).join("");
   updateDetailActions();
   renderMedia();
@@ -923,7 +965,11 @@ async function submitPost(event) {
   const title = $("#post-title").value.trim();
   const body = $("#post-body").value.trim();
   const tags = $$('input[name="tags"]:checked').map(input => input.value).slice(0, 3);
-  if (!title) return;
+  const hasExistingMedia = Boolean(state.editingPost?.media?.length);
+  if (!title && !body && !state.selectedFiles.length && !hasExistingMedia) {
+    showToast("写点文字或选择一张图片再发布吧", "error", "ph-warning-circle");
+    return;
+  }
   const submit = $("#publish-submit");
   submit.disabled = true;
   let postId = state.editingPost?.id || null;
@@ -934,7 +980,6 @@ async function submitPost(event) {
       if (error) throw error;
       showToast("日记已经更新", "success", "ph-check-circle");
     } else {
-      if (!state.selectedFiles.length) throw new Error("请至少选择一张图片或一个视频");
       const { data: post, error } = await state.client.from("posts").insert({
         author_id: state.user.id,
         author_name: state.profile.display_name,
@@ -946,10 +991,12 @@ async function submitPost(event) {
       }).select("id").single();
       if (error) throw error;
       postId = post.id;
-      const uploaded = await uploadMedia(postId);
-      uploadedPaths = uploaded.uploadedPaths;
-      const { error: mediaError } = await state.client.from("post_media").insert(uploaded.rows);
-      if (mediaError) throw mediaError;
+      if (state.selectedFiles.length) {
+        const uploaded = await uploadMedia(postId);
+        uploadedPaths = uploaded.uploadedPaths;
+        const { error: mediaError } = await state.client.from("post_media").insert(uploaded.rows);
+        if (mediaError) throw mediaError;
+      }
       const { error: publishError } = await state.client.from("posts").update({ status: "published" }).eq("id", postId);
       if (publishError) throw publishError;
       showToast("这条日记已经发布", "success", "ph-check-circle");
@@ -1146,6 +1193,10 @@ function bindEvents() {
   $("#reply-cancel").addEventListener("click", clearReply);
   els.mediaPrev.addEventListener("click", () => changeMedia(-1));
   els.mediaNext.addEventListener("click", () => changeMedia(1));
+  $("#media-zoom").addEventListener("click", toggleMediaZoom);
+  els.mediaStage.addEventListener("click", event => {
+    if (event.target.matches("img")) toggleMediaZoom();
+  });
   $("#detail-like").addEventListener("click", toggleLike);
   $("#detail-save").addEventListener("click", toggleBookmark);
   $("#detail-report").addEventListener("click", () => state.activePost && createReport("post", state.activePost.id));
