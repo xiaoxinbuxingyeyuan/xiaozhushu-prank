@@ -365,7 +365,8 @@ async function loadBackendPosts(reset = true) {
     state.posts = [];
   }
   const from = state.page * PAGE_SIZE;
-  const to = from + PAGE_SIZE - 1;
+  // Fetch one extra row so the button only appears when another page exists.
+  const to = from + PAGE_SIZE;
   let query = state.client
     .from("posts")
     .select(`id,legacy_key,title,body,tags,author_id,author_name,avatar_seed,created_at,status,
@@ -377,10 +378,11 @@ async function loadBackendPosts(reset = true) {
   query = applyBackendFilters(query);
   const { data, error } = await query;
   if (error) throw error;
-  const mapped = (data || []).map(mapDbPost);
+  const rows = data || [];
+  const mapped = rows.slice(0, PAGE_SIZE).map(mapDbPost);
   state.posts.push(...mapped);
   state.page += 1;
-  state.hasMore = mapped.length === PAGE_SIZE;
+  state.hasMore = rows.length > PAGE_SIZE;
   await loadLikedIds(mapped.map(post => post.id));
   renderFeed();
 }
