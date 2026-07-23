@@ -1638,8 +1638,8 @@ async function verifyAdminCode(event) {
   event.preventDefault();
   const email = $("#admin-email").value.trim();
   const token = $("#admin-token").value.trim().replace(/\s+/g, "");
-  if (!/^\d{6}$/.test(token)) {
-    showToast("请输入邮件里的 6 位验证码", "error", "ph-warning-circle");
+  if (!/^\d{6,8}$/.test(token)) {
+    showToast("Enter the numeric code from your email", "error", "ph-warning-circle");
     return;
   }
   const submit = event.submitter || $("#admin-verify-form button[type='submit']");
