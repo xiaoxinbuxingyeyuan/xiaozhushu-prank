@@ -16,7 +16,11 @@ python -m http.server 4173
 
 整个 `xiaozhushu` 文件夹可直接部署到任意静态托管服务，无需构建步骤。
 
-当前功能版地址：
+当前正式地址：
+
+https://xiaoxinbuxingyeyuan.github.io/xiaozhushu-prank/
+
+备份实验版仍保留在：
 
 https://xiaoxinbuxingyeyuan.github.io/xiaozhushu-prank/ui-demos/
 

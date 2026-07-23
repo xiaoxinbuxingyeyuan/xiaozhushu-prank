@@ -6,7 +6,8 @@
 
 - 先上线普通用户版本：浏览、搜索、日历回看、匿名发帖、评论、点赞。
 - 管理员邮箱登录暂缓；管理员入口只作为隐藏调试入口，不影响公开链接。
-- 线上功能页继续使用：`https://xiaoxinbuxingyeyuan.github.io/xiaozhushu-prank/ui-demos/`
+- 线上正式页使用：`https://xiaoxinbuxingyeyuan.github.io/xiaozhushu-prank/`
+- `/ui-demos/` 保留为备份实验页，不再作为主要分享链接。
 
 ## 上线前必测
 

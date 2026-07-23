@@ -5,8 +5,9 @@
 ## 已接入
 
 - Supabase 项目：`vvombzyqpgmmatgqefgx`
-- 线上功能页：`https://xiaoxinbuxingyeyuan.github.io/xiaozhushu-prank/ui-demos/`
-- 前端公开配置：`ui-demos/supabase-config.js`
+- 线上正式页：`https://xiaoxinbuxingyeyuan.github.io/xiaozhushu-prank/`
+- 备份实验页：`https://xiaoxinbuxingyeyuan.github.io/xiaozhushu-prank/ui-demos/`
+- 前端公开配置：`supabase-config.js` 与 `ui-demos/supabase-config.js`
 - Storage bucket：`post-media`
 - 数据表：`profiles`、`posts`、`post_media`、`comments`、`post_likes`、`reports`
 - RLS：以上公开表均已开启
