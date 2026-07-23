@@ -1318,7 +1318,10 @@ async function sendAdminLink(event) {
   const email = $("#admin-email").value.trim();
   const redirect = `${location.origin}${location.pathname}?admin=1`;
   const { error } = await state.client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect } });
-  showToast(error ? error.message : "登录链接已发送，请检查邮箱", error ? "error" : "success", error ? "ph-warning-circle" : "ph-envelope-simple");
+  const message = error?.message?.toLowerCase().includes("rate")
+    ? "邮件发送太频繁了，请等几分钟后再试"
+    : error?.message || "登录链接已发送，请检查邮箱";
+  showToast(error ? message : "登录链接已发送，请检查邮箱", error ? "error" : "success", error ? "ph-warning-circle" : "ph-envelope-simple");
 }
 
 async function loadAdminReports() {
@@ -1367,11 +1370,18 @@ function scheduleRealtimeRefresh() {
 async function initializeBackend() {
   if (!backendConfigured()) return false;
   try {
+    const params = new URLSearchParams(location.search);
+    const adminMode = params.has("admin");
     state.client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
+    if (adminMode && params.has("code")) {
+      const { error } = await state.client.auth.exchangeCodeForSession(location.href);
+      if (error) throw error;
+      history.replaceState(null, "", `${location.origin}${location.pathname}?admin=1`);
+    }
     let { data: { session } } = await state.client.auth.getSession();
-    if (!session && !CONFIG.turnstileSiteKey) {
+    if (!session && !CONFIG.turnstileSiteKey && !adminMode) {
       const { data, error } = await state.client.auth.signInAnonymously();
       if (error) throw error;
       session = data.session;
