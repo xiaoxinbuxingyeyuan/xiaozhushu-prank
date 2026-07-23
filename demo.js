@@ -133,7 +133,6 @@ const els = {
   communitySelect: $("#community-select"),
   communityTitle: $("#community-title"),
   communityDescription: $("#community-description"),
-  communitySwitchLabel: $("#community-switch-label"),
   inviteButton: $("#invite-button"),
   profileLayer: $("#profile-layer"),
   profileForm: $("#profile-form"),
@@ -476,7 +475,6 @@ function renderCommunityControls() {
       ? (active.description || "这是你和朋友的小猪日常社区。成员都可以看、发帖、评论和点赞。")
       : "先看看系统准备的小猪日常；登录后可以创建自己的小窝，邀请朋友一起发帖。";
   }
-  if (els.communitySwitchLabel) els.communitySwitchLabel.textContent = active?.name || "原生小猪示例区";
   if (els.inviteButton) els.inviteButton.hidden = !active;
   const publishText = $("#publish-button span");
   if (publishText) publishText.textContent = active ? "记录今天" : "创建后发帖";
@@ -1999,10 +1997,6 @@ function bindEvents() {
   $("#community-create-button")?.addEventListener("click", openCommunityDialog);
   els.inviteButton?.addEventListener("click", copyInviteLink);
   els.communitySelect?.addEventListener("change", event => setActiveCommunity(event.target.value));
-  $("#community-switch-button")?.addEventListener("click", () => {
-    if (els.communitySelect && !els.communitySelect.disabled) els.communitySelect.focus();
-    else if (state.backend) openCommunityDialog();
-  });
   els.miniCalendarGrid.addEventListener("click", event => {
     const button = event.target.closest("[data-calendar-date]");
     if (button) selectFeedDate(button.dataset.calendarDate);
