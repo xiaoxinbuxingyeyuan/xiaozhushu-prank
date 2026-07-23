@@ -1813,6 +1813,79 @@ async function loadAdminPosts() {
   $("#admin-list").innerHTML = posts.length ? posts.map(adminPostTemplate).join("") : `<div class="comments-empty"><i class="ph ph-tray"></i><p>还没有数据库帖子</p></div>`;
 }
 
+function formatBytes(bytes = 0) {
+  if (!bytes) return "0 MB";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = Number(bytes);
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(unit < 2 ? 0 : 1)} ${units[unit]}`;
+}
+
+function capacityMeter(label, used, limit, note = "") {
+  const percent = limit ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  const tone = percent >= 85 ? "danger" : percent >= 65 ? "warn" : "safe";
+  return `<div class="capacity-meter ${tone}">
+    <div><strong>${escapeHTML(label)}</strong><span>${formatBytes(used)} / ${formatBytes(limit)}</span></div>
+    <div class="capacity-bar"><i style="width:${percent}%"></i></div>
+    <small>${percent}%${note ? ` · ${escapeHTML(note)}` : ""}</small>
+  </div>`;
+}
+
+async function getCount(table, filter = query => query) {
+  const query = state.client.from(table).select("*", { count: "exact", head: true });
+  const { count, error } = await filter(query);
+  if (error) throw error;
+  return count || 0;
+}
+
+async function loadAdminCapacity() {
+  $("#admin-summary").innerHTML = `<div><strong>加载中</strong><span>正在估算容量</span></div>`;
+  $("#admin-list").innerHTML = `<div class="comments-empty"><i class="ph ph-spinner-gap"></i><p>正在数小猪账本……</p></div>`;
+  try {
+    const [posts, published, hidden, comments, media, profiles, communities, mediaRowsResult] = await Promise.all([
+      getCount("posts"),
+      getCount("posts", query => query.eq("status", "published")),
+      getCount("posts", query => query.eq("status", "hidden")),
+      getCount("comments"),
+      getCount("post_media"),
+      getCount("profiles"),
+      getCount("communities"),
+      state.client.from("post_media").select("size_bytes,storage_path,public_url").limit(1000)
+    ]);
+    if (mediaRowsResult.error) throw mediaRowsResult.error;
+    const mediaRows = mediaRowsResult.data || [];
+    const measuredMediaBytes = mediaRows.reduce((sum, item) => sum + Number(item.size_bytes || 0), 0);
+    const unmeasuredMedia = mediaRows.filter(item => !item.size_bytes).length;
+    const estimatedDbBytes = posts * 3200 + comments * 900 + profiles * 900 + communities * 1200 + media * 500;
+    const storageLimit = 1024 ** 3;
+    const dbLimit = 500 * 1024 ** 2;
+    $("#admin-summary").innerHTML = `
+      <div><strong>${posts}</strong><span>帖子总数</span></div>
+      <div><strong>${profiles}</strong><span>账号资料</span></div>
+      <div><strong>${media}</strong><span>媒体记录</span></div>`;
+    $("#admin-list").innerHTML = `<section class="capacity-panel">
+      <div class="capacity-note"><i class="ph ph-info"></i><p>这是前端基于数据库表记录做的估算，不等同于 Supabase Dashboard 的精确账单。真实项目用量仍以 Supabase 后台为准。</p></div>
+      ${capacityMeter("数据库估算", estimatedDbBytes, dbLimit, "免费版参考 500 MB")}
+      ${capacityMeter("上传媒体精确统计", measuredMediaBytes, storageLimit, unmeasuredMedia ? `${unmeasuredMedia} 个旧媒体未记录大小` : "免费版参考 1 GB Storage")}
+      <div class="capacity-grid">
+        <div><strong>${published}</strong><span>公开帖子</span></div>
+        <div><strong>${hidden}</strong><span>隐藏帖子</span></div>
+        <div><strong>${comments}</strong><span>评论数</span></div>
+        <div><strong>${communities}</strong><span>社区数</span></div>
+        <div><strong>${unmeasuredMedia}</strong><span>未计大小媒体</span></div>
+        <div><strong>5 GB</strong><span>月流量免费参考</span></div>
+      </div>
+    </section>`;
+  } catch (error) {
+    console.warn(error);
+    showToast("容量提示加载失败", "error", "ph-warning-circle");
+  }
+}
+
 function adminPostTemplate(post) {
   const cover = post.media?.find(item => item.kind === "image" || item.posterUrl);
   const thumb = cover ? assetUrl(cover.posterUrl || cover.url) : "";
@@ -1837,6 +1910,7 @@ function adminPostTemplate(post) {
 async function setAdminTab(tab) {
   $$(".admin-tabs button").forEach(button => button.classList.toggle("active", button.dataset.adminTab === tab));
   if (tab === "posts") await loadAdminPosts();
+  else if (tab === "capacity") await loadAdminCapacity();
   else await loadAdminReports();
 }
 
