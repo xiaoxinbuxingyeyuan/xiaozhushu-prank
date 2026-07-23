@@ -270,7 +270,7 @@ h2 {
 }
 
 h1 {
-  max-width: 720px;
+  max-width: none;
   font-size: clamp(36px, 6vw, 74px);
   line-height: 0.98;
 }
@@ -1659,9 +1659,14 @@ body.modal-open {
   }
 
   .hero-copy {
-    grid-template-columns: minmax(0, 1fr) minmax(290px, 330px);
-    column-gap: 36px;
+    grid-template-columns: minmax(820px, 1fr) minmax(270px, 320px);
+    column-gap: 28px;
     row-gap: 18px;
+  }
+
+  .hero-copy h1 {
+    white-space: nowrap;
+    font-size: clamp(52px, 4.7vw, 68px);
   }
 
   .hero-intro {
@@ -1728,6 +1733,10 @@ body.modal-open {
 
   .hero-copy {
     grid-template-columns: 1fr;
+  }
+
+  .hero-copy h1 {
+    white-space: normal;
   }
 }
 
