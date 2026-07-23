@@ -10,7 +10,7 @@
     <title>懂猪帝 - 懂不懂小猪都用懂猪帝</title>
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
-    <link rel="stylesheet" href="demo.css?v=20260723-admin-email-otp" />
+    <link rel="stylesheet" href="demo.css?v=20260723-v2-ui-fixes" />
   </head>
   <body data-theme="diary">
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -33,7 +33,13 @@
         <div class="lab-actions">
           <span class="mode-pill" id="mode-pill"><i class="ph ph-cloud-slash"></i><span>静态浏览</span></span>
           <button class="lab-icon-button" id="profile-button" type="button"><i class="ph ph-user-circle"></i><span>我的资料</span></button>
-          <button class="lab-icon-button community-switch-button" id="community-switch-button" type="button"><i class="ph ph-house-line"></i><span id="community-switch-label">示例小猪</span></button>
+          <button class="lab-icon-button community-switch-button" id="community-switch-button" type="button"><i class="ph ph-house-line"></i><span id="community-switch-label">原生小猪示例区</span></button>
+          <label class="community-select-label hero-community-select" for="community-select">
+            <i class="ph ph-swap"></i>
+            <select id="community-select" aria-label="切换社区">
+              <option value="">原生小猪示例区</option>
+            </select>
+          </label>
           <button class="lab-icon-button" id="invite-button" type="button" hidden><i class="ph ph-link-simple"></i><span>邀请好友</span></button>
           <button class="lab-icon-button" id="community-create-button" type="button"><i class="ph ph-users-three"></i><span>创建社区</span></button>
           <button class="lab-primary-button" id="publish-button" type="button"><i class="ph ph-plus"></i><span>记录今天</span></button>
@@ -70,22 +76,6 @@
     </header>
 
     <section class="style-note" id="style-note" aria-live="polite"></section>
-
-    <section class="community-strip" id="community-strip" aria-live="polite">
-      <div>
-        <span class="panel-kicker">COMMUNITY</span>
-        <strong id="community-title">原生小猪示例区</strong>
-        <p id="community-description">先看看系统准备的小猪日常；登录后可以创建自己的小窝，邀请朋友一起发帖。</p>
-      </div>
-      <div class="community-strip-actions">
-        <label class="community-select-label" for="community-select">
-          <i class="ph ph-swap"></i>
-          <select id="community-select" aria-label="切换社区">
-            <option value="">示例小猪</option>
-          </select>
-        </label>
-      </div>
-    </section>
 
     <main class="demo-shell">
       <aside class="daily-panel" aria-label="日常记录信息">
@@ -238,6 +228,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-    <script src="demo.js?v=20260723-v2-community" defer></script>
+    <script src="demo.js?v=20260723-v2-ui-fixes" defer></script>
   </body>
 </html>

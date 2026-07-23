@@ -462,7 +462,7 @@ function renderCommunityControls() {
   const active = state.activeCommunity;
   const hasBackend = state.backend;
   if (els.communitySelect) {
-    const options = [`<option value="">示例小猪</option>`].concat(
+    const options = [`<option value="">原生小猪示例区</option>`].concat(
       state.communities.map(item => `<option value="${escapeHTML(item.id)}">${escapeHTML(item.name)}${item.role === "owner" ? " · 我创建的" : ""}</option>`)
     );
     els.communitySelect.innerHTML = options.join("");
@@ -475,7 +475,7 @@ function renderCommunityControls() {
       ? (active.description || "这是你和朋友的小猪日常社区。成员都可以看、发帖、评论和点赞。")
       : "先看看系统准备的小猪日常；登录后可以创建自己的小窝，邀请朋友一起发帖。";
   }
-  if (els.communitySwitchLabel) els.communitySwitchLabel.textContent = active?.name || "示例小猪";
+  if (els.communitySwitchLabel) els.communitySwitchLabel.textContent = active?.name || "原生小猪示例区";
   if (els.inviteButton) els.inviteButton.hidden = !active;
   const publishText = $("#publish-button span");
   if (publishText) publishText.textContent = active ? "记录今天" : "创建后发帖";
