@@ -853,7 +853,7 @@ async function loadStaticPosts(reset = true) {
     const response = await fetch("pig-posts.json");
     if (!response.ok) throw new Error("静态帖子加载失败");
     const pigPosts = (await response.json()).map(normalizePigPost);
-    state.staticPosts = mixPosts(pigPosts, FRIEND_POSTS);
+    state.staticPosts = pigPosts;
   }
   if (reset) {
     state.page = 0;
