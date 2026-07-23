@@ -70,6 +70,10 @@ const state = {
   query: "",
   tag: "",
   dateRange: "all",
+  calendarMonth: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+  calendarPosts: [],
+  selectedDate: null,
+  drawerDate: null,
   activePost: null,
   activeMedia: 0,
   comments: [],
@@ -95,6 +99,9 @@ const els = {
   loadMore: $("#load-more"),
   search: $("#search-input"),
   dateFilter: $("#date-filter"),
+  miniCalendarGrid: $("#mini-calendar-grid"),
+  memoryCalendarGrid: $("#memory-calendar-grid"),
+  memoryDayList: $("#memory-day-list"),
   modePill: $("#mode-pill"),
   offlineBanner: $("#offline-banner"),
   detailLayer: $("#detail-layer"),
@@ -170,6 +177,202 @@ function formatDate(value, detailed = false) {
   return new Intl.DateTimeFormat("zh-CN", detailed
     ? { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" }
     : { month: "short", day: "numeric" }).format(date);
+}
+
+function dateKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  const pad = number => String(number).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function parseDateKey(key) {
+  const [year, month, day] = String(key).split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function nextDate(date, amount = 1) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount);
+}
+
+function calendarMonthLabel(date) {
+  return `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`;
+}
+
+function calendarCells(month) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const leading = (first.getDay() + 6) % 7;
+  const start = nextDate(first, -leading);
+  return Array.from({ length: 42 }, (_, index) => nextDate(start, index));
+}
+
+function postsByDate() {
+  return state.calendarPosts.reduce((map, post) => {
+    const key = dateKey(post.createdAt);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(post);
+    return map;
+  }, new Map());
+}
+
+function dayAriaLabel(date, count) {
+  const weekday = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][date.getDay()];
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${weekday}${count ? `，${count}条记录` : "，没有记录"}`;
+}
+
+function renderMiniCalendar(grouped) {
+  const today = dateKey(new Date());
+  $("#mini-calendar-title").textContent = calendarMonthLabel(state.calendarMonth);
+  els.miniCalendarGrid.innerHTML = calendarCells(state.calendarMonth).map(date => {
+    const key = dateKey(date);
+    const count = grouped.get(key)?.length || 0;
+    const outside = date.getMonth() !== state.calendarMonth.getMonth();
+    return `<button class="mini-calendar-day${outside ? " outside" : ""}${key === today ? " today" : ""}${key === state.selectedDate ? " selected" : ""}" type="button" role="gridcell" data-calendar-date="${key}" aria-label="${dayAriaLabel(date, count)}">
+      <span>${date.getDate()}</span>${count ? `<i></i><small>${count}</small>` : ""}
+    </button>`;
+  }).join("");
+  $("#calendar-clear").hidden = !state.selectedDate;
+}
+
+function memoryThumbnail(post, index) {
+  const media = post.media?.[0];
+  if (!media || (media.kind === "video" && !media.posterUrl)) return "";
+  const url = assetUrl(media.posterUrl || media.url);
+  return `<img src="${escapeHTML(url)}" alt="" loading="lazy" style="--thumb-index:${index}" />`;
+}
+
+function renderMemoryCalendar(grouped) {
+  const today = dateKey(new Date());
+  $("#memory-month-title").textContent = calendarMonthLabel(state.calendarMonth);
+  els.memoryCalendarGrid.innerHTML = calendarCells(state.calendarMonth).map(date => {
+    const key = dateKey(date);
+    const posts = grouped.get(key) || [];
+    const outside = date.getMonth() !== state.calendarMonth.getMonth();
+    const thumbs = posts.slice(0, 2).map(memoryThumbnail).join("");
+    return `<button class="memory-calendar-day${outside ? " outside" : ""}${key === today ? " today" : ""}${key === state.drawerDate ? " selected" : ""}" type="button" role="gridcell" data-memory-date="${key}" aria-label="${dayAriaLabel(date, posts.length)}">
+      <span class="memory-day-number">${date.getDate()}</span>
+      ${thumbs ? `<span class="memory-thumbs">${thumbs}</span>` : ""}
+      ${posts.length ? `<small>${posts.length} 项</small>` : ""}
+    </button>`;
+  }).join("");
+}
+
+function previewTemplate(post) {
+  const media = post.media?.[0];
+  const hasThumb = media && !(media.kind === "video" && !media.posterUrl);
+  const thumb = hasThumb ? assetUrl(media.posterUrl || media.url) : "";
+  const time = new Intl.DateTimeFormat("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(post.createdAt));
+  return `<article class="memory-preview${thumb ? "" : " text-preview"}" data-memory-post="${escapeHTML(post.id)}">
+    <div class="memory-preview-copy">
+      <time>${time}</time>
+      ${post.title ? `<h4>${escapeHTML(post.title)}</h4>` : ""}
+      ${post.body ? `<p>${escapeHTML(postExcerpt(post, 70))}</p>` : ""}
+    </div>
+    ${thumb ? `<img src="${escapeHTML(thumb)}" alt="${escapeHTML(postLabel(post))}" loading="lazy" />` : `<span class="text-note-icon"><i class="ph ph-note-pencil"></i></span>`}
+  </article>`;
+}
+
+function renderMemoryDay(grouped) {
+  const activeKey = state.drawerDate || dateKey(new Date());
+  const activeDate = parseDateKey(activeKey);
+  const weekday = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][activeDate.getDay()];
+  const posts = grouped.get(activeKey) || [];
+  $("#memory-day-title").textContent = `${activeDate.getMonth() + 1}月${activeDate.getDate()}日 · ${weekday}`;
+  $("#memory-day-count").textContent = posts.length ? `${posts.length} 项记录` : "这一天还没有留下记录";
+  els.memoryDayList.innerHTML = posts.length
+    ? posts.slice(0, 6).map(previewTemplate).join("")
+    : `<div class="memory-empty"><i class="ph ph-calendar-heart"></i><p>这一天安安静静的，等一条新日常。</p></div>`;
+  $("#memory-view-day").disabled = !posts.length;
+}
+
+function renderCalendars() {
+  const grouped = postsByDate();
+  renderMiniCalendar(grouped);
+  renderMemoryCalendar(grouped);
+  renderMemoryDay(grouped);
+}
+
+async function loadCalendarPosts() {
+  const start = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth(), 1);
+  const end = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + 1, 1);
+  try {
+    if (state.backend) {
+      const { data, error } = await state.client
+        .from("posts")
+        .select(`id,legacy_key,title,body,tags,author_id,author_name,avatar_seed,created_at,status,
+          profile:profiles!posts_author_id_fkey(display_name,avatar_seed,role),
+          media:post_media(id,media_kind,public_url,storage_path,poster_url,sort_order)`)
+        .eq("status", "published")
+        .gte("created_at", start.toISOString())
+        .lt("created_at", end.toISOString())
+        .order("created_at", { ascending: true })
+        .limit(200);
+      if (error) throw error;
+      state.calendarPosts = (data || []).map(mapDbPost);
+    } else {
+      if (!state.staticPosts.length) await loadStaticPosts(true);
+      state.calendarPosts = state.staticPosts.filter(post => {
+        const created = new Date(post.createdAt);
+        return created >= start && created < end;
+      });
+    }
+  } catch (error) {
+    console.warn("Calendar loading failed", error);
+    state.calendarPosts = state.posts.filter(post => {
+      const created = new Date(post.createdAt);
+      return created >= start && created < end;
+    });
+  }
+  if (!state.drawerDate || parseDateKey(state.drawerDate).getMonth() !== state.calendarMonth.getMonth()) {
+    const today = new Date();
+    state.drawerDate = today.getMonth() === state.calendarMonth.getMonth() && today.getFullYear() === state.calendarMonth.getFullYear()
+      ? dateKey(today)
+      : dateKey(start);
+  }
+  renderCalendars();
+}
+
+async function shiftCalendarMonth(amount) {
+  state.calendarMonth = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + amount, 1);
+  state.drawerDate = null;
+  await loadCalendarPosts();
+}
+
+async function selectFeedDate(key) {
+  state.selectedDate = key;
+  state.drawerDate = key;
+  const selected = parseDateKey(key);
+  state.calendarMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
+  els.dateFilter.value = "all";
+  state.dateRange = "all";
+  renderCalendars();
+  await refreshFeed();
+}
+
+async function goToToday(applyToFeed = false) {
+  const today = new Date();
+  state.calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  state.drawerDate = dateKey(today);
+  await loadCalendarPosts();
+  if (applyToFeed) await selectFeedDate(state.drawerDate);
+}
+
+async function clearCalendarSelection() {
+  state.selectedDate = null;
+  renderCalendars();
+  await refreshFeed();
+}
+
+function openMemoryCalendar() {
+  if (!state.drawerDate) state.drawerDate = state.selectedDate || dateKey(new Date());
+  renderCalendars();
+  openLayer("memory");
+}
+
+async function viewDrawerDay() {
+  if (!state.drawerDate) return;
+  await selectFeedDate(state.drawerDate);
+  closeLayer("memory");
+  $(".feed-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function showToast(message, type = "info", icon = "ph-info") {
@@ -326,8 +529,15 @@ function renderFeed() {
   els.feed.innerHTML = state.posts.map(cardTemplate).join("");
   els.feedEmpty.hidden = state.posts.length > 0;
   els.loadMore.hidden = !state.hasMore || state.posts.length === 0;
+  if (state.selectedDate) {
+    const selected = parseDateKey(state.selectedDate);
+    const count = postsByDate().get(state.selectedDate)?.length || state.posts.length;
+    $("#feed-heading").textContent = `${selected.getMonth() + 1}月${selected.getDate()}日 · ${count}条记录`;
+  } else {
+    $("#feed-heading").textContent = THEME_COPY[document.body.dataset.theme || "diary"].heading;
+  }
   els.feedSummary.textContent = state.backend
-    ? `已同步 ${state.posts.length} 条记录${state.query ? ` · 搜索“${state.query}”` : ""}`
+    ? `已同步 ${state.posts.length} 条记录${state.selectedDate ? " · 正在按日期回看" : ""}${state.query ? ` · 搜索“${state.query}”` : ""}`
     : `静态档案 · 已翻到 ${state.posts.length} 条记录`;
 }
 
@@ -337,6 +547,7 @@ function staticMatches(post) {
   if (query && !text.includes(query)) return false;
   if (state.tag && !(post.tags || []).includes(state.tag)) return false;
   const created = new Date(post.createdAt).getTime();
+  if (state.selectedDate && dateKey(post.createdAt) !== state.selectedDate) return false;
   if (state.dateRange === "today" && created < Date.now() - 86_400_000) return false;
   if (state.dateRange === "week" && created < Date.now() - 7 * 86_400_000) return false;
   if (state.dateRange === "month" && created < Date.now() - 31 * 86_400_000) return false;
@@ -367,7 +578,10 @@ function applyBackendFilters(query) {
   const cleanSearch = state.query.replace(/[%_,()]/g, " ").trim();
   if (cleanSearch) result = result.or(`title.ilike.%${cleanSearch}%,body.ilike.%${cleanSearch}%,author_name.ilike.%${cleanSearch}%`);
   if (state.tag) result = result.contains("tags", [state.tag]);
-  if (state.dateRange !== "all") {
+  if (state.selectedDate) {
+    const start = parseDateKey(state.selectedDate);
+    result = result.gte("created_at", start.toISOString()).lt("created_at", nextDate(start).toISOString());
+  } else if (state.dateRange !== "all") {
     const days = { today: 1, week: 7, month: 31 }[state.dateRange];
     result = result.gte("created_at", new Date(Date.now() - days * 86_400_000).toISOString());
   }
@@ -1004,6 +1218,7 @@ async function submitPost(event) {
     closeLayer("publish");
     resetPublishForm();
     await refreshFeed();
+    await loadCalendarPosts();
   } catch (error) {
     if (uploadedPaths.length) await state.client.storage.from("post-media").remove(uploadedPaths);
     if (postId && !state.editingPost) await state.client.from("posts").delete().eq("id", postId);
@@ -1054,6 +1269,7 @@ async function deletePost(post) {
     closeLayer("detail");
     showToast("帖子已移出日记", "success", "ph-check-circle");
     await refreshFeed();
+    await loadCalendarPosts();
   }
 }
 
@@ -1129,7 +1345,10 @@ function subscribeRealtime() {
 
 function scheduleRealtimeRefresh() {
   window.clearTimeout(state.realtimeTimer);
-  state.realtimeTimer = window.setTimeout(() => refreshFeed(), 550);
+  state.realtimeTimer = window.setTimeout(() => {
+    refreshFeed();
+    loadCalendarPosts();
+  }, 550);
 }
 
 async function initializeBackend() {
@@ -1173,7 +1392,9 @@ function bindEvents() {
   els.search.addEventListener("search", scheduleSearch);
   els.search.addEventListener("change", scheduleSearch);
   els.dateFilter.addEventListener("change", () => {
+    state.selectedDate = null;
     state.dateRange = els.dateFilter.value;
+    renderCalendars();
     refreshFeed();
   });
   $$(".tag-chip").forEach(button => button.addEventListener("click", () => {
@@ -1184,6 +1405,34 @@ function bindEvents() {
   els.loadMore.addEventListener("click", loadMore);
   $("#offline-close").addEventListener("click", () => { els.offlineBanner.hidden = true; });
   $("#publish-button").addEventListener("click", () => openPublish());
+  $("#calendar-open").addEventListener("click", openMemoryCalendar);
+  $$("[data-calendar-shift]").forEach(button => button.addEventListener("click", () => shiftCalendarMonth(Number(button.dataset.calendarShift))));
+  $("#calendar-today").addEventListener("click", () => goToToday(true));
+  $("#memory-today").addEventListener("click", () => goToToday(false));
+  $("#calendar-clear").addEventListener("click", clearCalendarSelection);
+  $("#memory-view-day").addEventListener("click", viewDrawerDay);
+  els.miniCalendarGrid.addEventListener("click", event => {
+    const button = event.target.closest("[data-calendar-date]");
+    if (button) selectFeedDate(button.dataset.calendarDate);
+  });
+  els.memoryCalendarGrid.addEventListener("click", event => {
+    const button = event.target.closest("[data-memory-date]");
+    if (!button) return;
+    state.drawerDate = button.dataset.memoryDate;
+    const selected = parseDateKey(state.drawerDate);
+    if (selected.getMonth() !== state.calendarMonth.getMonth()) {
+      state.calendarMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      loadCalendarPosts();
+    } else {
+      renderCalendars();
+    }
+  });
+  els.memoryDayList.addEventListener("click", event => {
+    const item = event.target.closest("[data-memory-post]");
+    if (!item) return;
+    const post = state.calendarPosts.find(value => value.id === item.dataset.memoryPost);
+    if (post) openPost(post);
+  });
   $("#profile-button").addEventListener("click", () => state.backend ? openProfileDialog(false) : showToast("配置 Supabase 后即可创建匿名身份", "error", "ph-cloud-slash"));
   $("#admin-entry").addEventListener("click", openAdmin);
   $("#admin-login-form").addEventListener("submit", sendAdminLink);
@@ -1284,6 +1533,7 @@ async function init() {
   const online = await initializeBackend();
   if (!online) setBackendMode(false);
   await refreshFeed();
+  await loadCalendarPosts();
   if (online && new URLSearchParams(location.search).has("admin")) openAdmin();
 }
 

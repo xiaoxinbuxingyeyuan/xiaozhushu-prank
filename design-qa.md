@@ -1,30 +1,54 @@
 # Design QA
 
-- Source visual: `C:/Users/Lenovo/Documents/Codex/2026-07-01/new-chat/work/current-ui-demo-reference.png`
-- Implementation screenshot: `C:/Users/Lenovo/Documents/Codex/2026-07-01/new-chat/work/ui-demo-restored-desktop.png`
-- Mobile screenshot: `C:/Users/Lenovo/Documents/Codex/2026-07-01/new-chat/work/ui-demo-final-mobile.png`
-- Desktop viewport: 1440 × 1024
-- Mobile viewport: 390 × 844
-- State: 日记胶片风首页、静态只读回退；详情弹窗另行交互检查
+- Source visual truth: `C:/Users/Lenovo/.codex/generated_images/019f19ae-f502-7a01-97de-03d5c441e7f7/exec-1f142e29-492b-4878-afb9-8b1d31a278d2.png`
+- Browser-rendered desktop implementation: `C:/Users/Lenovo/AppData/Local/Temp/calendar-desktop-final.png`
+- Browser-rendered mobile implementation: `C:/Users/Lenovo/AppData/Local/Temp/calendar-mobile-drawer.png`
+- Mobile preview state: `C:/Users/Lenovo/AppData/Local/Temp/calendar-mobile-preview.png`
+- Combined comparison evidence: `C:/Users/Lenovo/AppData/Local/Temp/calendar-design-comparison.png`
+- Source pixels: 1487 × 1058
+- Desktop implementation pixels / CSS viewport / density: 1440 × 1024 / 1440 × 1024 / 1×
+- Mobile implementation pixels / CSS viewport / density: 390 × 844 / 390 × 844 / 1×
+- Comparison normalization: both desktop artifacts were proportionally contained in equal 720 × 512 panels without cropping.
+- State: 日记胶片风首页，回忆日历抽屉打开，2026 年 7 月，静态数据回退模式。
 
-## Evidence
+## Full-view comparison evidence
 
-源图与实现图在同一比较输入中检查。实现保留了 7 月 5 日版本的超大标题、三风格切换卡、暖色纸张纹理、圆角说明条、侧栏日记卡和瀑布流卡片。新增状态、资料、发布、搜索、日期筛选和离线提示均使用原有圆角、描边与纸张色，不改变既有视觉层级。
+The implementation keeps the selected reference’s warm paper palette, darkened and blurred page backdrop, right-side diary drawer, compact brand header, large month grid, photo-backed date cells, selected-day postage-note highlight, and adjacent day preview column. The implementation intentionally uses the repository’s real July records rather than the generated reference’s placeholder titles and counts.
 
-## Findings and fixes
+## Focused region evidence
 
-1. P1：第一次详情复测时评论输入区超出弹窗底部。为详情 Grid 补充受约束的行轨道和 `min-height: 0`，复测输入区底部为 901.33px，位于弹窗 902px 边界内。
-2. P2：390px 下拼贴卡片旋转造成 4px 文档级横向溢出。移动断点为根节点增加横向裁切；复测 `scrollWidth === clientWidth === 375`。
-3. P2：搜索清空在浏览器原生搜索取消行为中需要额外事件。为搜索框补充 `search` 与 `change` 监听。
-4. P3：静态回退时发布和评论不可用但缺少解释。保留明显的蓝灰提示条、禁用评论提示和 toast，不让页面表现为故障。
+The drawer calendar and day-preview column were inspected at 1440 × 1024. The mobile drawer was separately captured at 390 × 844 before and after scrolling so the month grid, selected-day summary, post preview, and “查看当天全部” action were all visible. Additional cropping was not needed because these captures keep all calendar controls readable at native density.
 
-## Interaction checks
+## Required fidelity surfaces
 
-- 首页加载 12 条，分页数据源共 24 条。
-- “Rocky”搜索返回 3 条。
-- 三种主题可切换，`data-theme` 正确更新。
-- 帖子详情可打开，轮播、点赞、收藏、举报和评论区控件存在。
-- 静态模式发布会给出 Supabase 配置提示，不会创建假数据。
-- 桌面和手机均无文档级横向溢出。
+- Fonts and typography: existing Chinese display and UI font stack is preserved; month title, selected-day heading, counts, and secondary copy retain clear hierarchy without clipping or unintended wrapping.
+- Spacing and layout rhythm: the desktop drawer uses a stable two-column grid; the mobile drawer becomes a single scrollable column. Calendar cells, preview cards, radii, borders, and shadows maintain the reference’s diary-card rhythm.
+- Colors and visual tokens: warm ivory paper, coral “today” marker, pale-yellow selected date, muted ink, and soft backdrop blur follow the reference. Contrast remains sufficient for labels and controls.
+- Image quality and asset fidelity: real post thumbnails are used without forced aspect-ratio cropping inside the date cells. Text-only records fall back to the note treatment rather than a fake image.
+- Copy and content: “回忆日历”, “回到今天”, date/count labels, empty-day copy, and “查看当天全部” match the requested daily-record flow.
+
+## Findings
+
+- No actionable P0, P1, or P2 differences remain.
+- P3: the generated reference shows several posts on one selected day, while the current seed dataset usually has one post per day. This is expected data variation; the implementation supports multiple preview cards when the backend contains them.
+
+## Primary interactions tested
+
+- Sidebar month renders 42 date cells with post dots and counts.
+- Clicking a sidebar date filters the feed and updates its heading.
+- Clearing the date restores the complete feed.
+- Opening the memory drawer renders 42 date cells, thumbnails, counts, and the selected-day preview.
+- Selecting a drawer date updates the preview without leaving the drawer.
+- “查看当天全部” closes the drawer and applies the same date to the feed.
+- Mobile drawer fills the 390 × 844 viewport, has no horizontal overflow, and scrolls from the month grid to the day preview.
+- Page console was checked after desktop and mobile interactions; no page-origin errors or warnings were present.
+
+## Comparison history
+
+- Pass 1: no P0/P1/P2 visual mismatch found. No visual fix iteration was required.
+
+## Follow-up polish
+
+- P3: once several records exist on the same date, re-check the visual density of a six-item preview list on a shorter laptop viewport.
 
 final result: passed

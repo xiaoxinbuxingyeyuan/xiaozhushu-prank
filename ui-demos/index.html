@@ -36,6 +36,7 @@
           <span class="mode-pill" id="mode-pill"><i class="ph ph-cloud-slash"></i><span>静态浏览</span></span>
           <button class="lab-icon-button" id="profile-button" type="button"><i class="ph ph-user-circle"></i><span>我的资料</span></button>
           <button class="lab-primary-button" id="publish-button" type="button"><i class="ph ph-plus"></i><span>记录今天</span></button>
+          <button class="calendar-trigger" id="calendar-open" type="button" aria-label="打开回忆日历"><i class="ph ph-calendar-dots"></i><span>回忆日历</span></button>
         </div>
       </section>
 
@@ -72,6 +73,21 @@
           <p>93% 软乎乎，7% 正在装作不是小猪。</p>
         </div>
 
+        <section class="panel-card mini-calendar-card" aria-labelledby="mini-calendar-title">
+          <header class="calendar-card-header">
+            <button class="calendar-nav" type="button" data-calendar-shift="-1" aria-label="上个月"><i class="ph ph-caret-left"></i></button>
+            <strong id="mini-calendar-title"></strong>
+            <button class="calendar-nav" type="button" data-calendar-shift="1" aria-label="下个月"><i class="ph ph-caret-right"></i></button>
+          </header>
+          <div class="calendar-weekdays" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+          <div class="mini-calendar-grid" id="mini-calendar-grid" role="grid" aria-label="发布日历"></div>
+          <footer class="mini-calendar-footer">
+            <span><i></i> 有记录</span>
+            <button type="button" id="calendar-today">回到今天</button>
+            <button type="button" id="calendar-clear" hidden>查看全部</button>
+          </footer>
+        </section>
+
         <div class="panel-card note-card">
           <span class="panel-kicker">NOTE</span>
           <p>“所有日常都会被懂猪帝识别成：有点像猪。”</p>
@@ -105,6 +121,39 @@
         <button class="load-more" id="load-more" type="button"><span>继续往后翻</span><i class="ph ph-arrow-down"></i></button>
       </section>
     </main>
+
+    <div class="memory-layer dialog-layer" id="memory-layer" aria-hidden="true">
+      <button class="layer-backdrop" type="button" data-close="memory" aria-label="关闭回忆日历"></button>
+      <aside class="memory-drawer" role="dialog" aria-modal="true" aria-labelledby="memory-title">
+        <header class="memory-header">
+          <div class="memory-heading">
+            <span class="memory-brand"><i class="ph-fill ph-piggy-bank"></i></span>
+            <div><h2 id="memory-title">回忆日历</h2><p>翻开属于小猪们的每一天</p></div>
+          </div>
+          <div class="memory-controls">
+            <button class="memory-today" id="memory-today" type="button"><i class="ph ph-arrow-counter-clockwise"></i>回到今天</button>
+            <button class="memory-close" type="button" data-close="memory" aria-label="关闭回忆日历"><i class="ph ph-x"></i></button>
+          </div>
+        </header>
+        <div class="memory-content">
+          <section class="memory-month" aria-label="月份日历">
+            <header class="memory-month-header">
+              <button type="button" data-calendar-shift="-1" aria-label="上个月"><i class="ph ph-caret-left"></i></button>
+              <strong id="memory-month-title"></strong>
+              <button type="button" data-calendar-shift="1" aria-label="下个月"><i class="ph ph-caret-right"></i></button>
+            </header>
+            <div class="memory-weekdays" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+            <div class="memory-calendar-grid" id="memory-calendar-grid" role="grid" aria-label="回忆月份"></div>
+            <div class="memory-legend"><span><i></i> 有记录</span><span>数字为当天记录数</span></div>
+          </section>
+          <section class="memory-day" aria-live="polite">
+            <header class="memory-day-header"><div><h3 id="memory-day-title"></h3><p id="memory-day-count"></p></div></header>
+            <div class="memory-day-list" id="memory-day-list"></div>
+            <button class="memory-view-day" id="memory-view-day" type="button"><span>查看当天全部</span><i class="ph ph-arrow-right"></i></button>
+          </section>
+        </div>
+      </aside>
+    </div>
 
     <div class="detail-layer dialog-layer" id="detail-layer" aria-hidden="true">
       <button class="detail-close" id="detail-close" data-close="detail" type="button" aria-label="关闭帖子">×</button>
