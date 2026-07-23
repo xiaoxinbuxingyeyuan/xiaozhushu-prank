@@ -10,7 +10,7 @@
     <title>懂猪帝 - 懂不懂小猪都用懂猪帝</title>
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
-    <link rel="stylesheet" href="demo.css?v=20260723-hero-nowrap" />
+    <link rel="stylesheet" href="demo.css?v=20260723-admin-email-otp" />
   </head>
   <body data-theme="diary">
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -207,7 +207,7 @@
 
     <div class="dialog-layer" id="profile-layer" aria-hidden="true"><button class="layer-backdrop" type="button" data-close="profile" aria-label="关闭个人资料"></button><article class="small-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-title"><button class="dialog-close inline" type="button" data-close="profile" aria-label="关闭个人资料"><i class="ph ph-x"></i></button><span class="profile-preview avatar" id="profile-avatar-preview"></span><span class="panel-kicker">YOUR PIG IDENTITY</span><h2 id="profile-title">给自己取个名字</h2><p>不用邮箱。这个昵称只保存在当前匿名身份里。</p><form id="profile-form"><label class="field-label" for="profile-name">昵称</label><input id="profile-name" maxlength="24" required placeholder="例如：粉鼻子观察员" /><div id="turnstile-slot"></div><button class="lab-primary-button" type="submit">保存并继续</button></form></article></div>
 
-    <div class="dialog-layer" id="admin-layer" aria-hidden="true"><button class="layer-backdrop" type="button" data-close="admin" aria-label="关闭管理窗口"></button><article class="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-title"><header class="dialog-header"><div><span class="panel-kicker">MODERATION DESK</span><h2 id="admin-title">懂猪帝管理台</h2></div><button class="dialog-close inline" type="button" data-close="admin" aria-label="关闭管理窗口"><i class="ph ph-x"></i></button></header><section id="admin-login-view"><p>输入管理员邮箱，我们会发送一个登录链接。</p><form id="admin-login-form"><label class="field-label" for="admin-email">管理员邮箱</label><div class="inline-form"><input id="admin-email" type="email" required placeholder="you@example.com" /><button class="lab-primary-button" type="submit">发送链接</button></div></form></section><section id="admin-content-view" hidden><div class="admin-tabs" role="tablist" aria-label="管理台视图"><button class="active" type="button" data-admin-tab="reports">待处理举报</button><button type="button" data-admin-tab="posts">全部帖子</button></div><div class="admin-summary" id="admin-summary"></div><div class="admin-list" id="admin-list"></div></section></article></div>
+    <div class="dialog-layer" id="admin-layer" aria-hidden="true"><button class="layer-backdrop" type="button" data-close="admin" aria-label="关闭管理窗口"></button><article class="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-title"><header class="dialog-header"><div><span class="panel-kicker">MODERATION DESK</span><h2 id="admin-title">懂猪帝管理台</h2></div><button class="dialog-close inline" type="button" data-close="admin" aria-label="关闭管理窗口"><i class="ph ph-x"></i></button></header><section id="admin-login-view"><p>输入管理员邮箱，我们会发送 6 位验证码。登录后只要这个邮箱在 Supabase 里被标记为 admin，就能进入管理台。</p><form id="admin-login-form"><label class="field-label" for="admin-email">管理员邮箱</label><div class="inline-form"><input id="admin-email" type="email" required placeholder="you@example.com" /><button class="lab-primary-button" id="admin-send-button" type="submit">发送验证码</button></div></form><form class="admin-verify-form" id="admin-verify-form" hidden><label class="field-label" for="admin-token">邮箱验证码 <span>6 位数字</span></label><div class="inline-form"><input id="admin-token" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" /><button class="lab-primary-button" type="submit">验证进入</button></div></form><p class="admin-login-help">如果邮件里只有登录链接，没有验证码，需要在 Supabase 邮件模板里加入 <code>{{ .Token }}</code>。</p></section><section id="admin-content-view" hidden><div class="admin-tabs" role="tablist" aria-label="管理台视图"><button class="active" type="button" data-admin-tab="reports">待处理举报</button><button type="button" data-admin-tab="posts">全部帖子</button></div><div class="admin-summary" id="admin-summary"></div><div class="admin-list" id="admin-list"></div></section></article></div>
 
     <div class="action-menu" id="post-action-menu" hidden></div><div class="toast-stack" id="toast-stack" aria-live="polite"></div>
 
@@ -215,6 +215,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-    <script src="demo.js?v=20260723-admin-posts-admin" defer></script>
+    <script src="demo.js?v=20260723-admin-email-otp" defer></script>
   </body>
 </html>

@@ -1554,6 +1554,10 @@ body[data-theme="dream"] .detail-modal {
 .small-dialog form { text-align: left; }
 .small-dialog .lab-primary-button { width: 100%; justify-content: center; margin-top: 16px; }
 .inline-form { gap: 8px; }
+.admin-verify-form { margin-top: 14px; }
+#admin-token { text-align: center; letter-spacing: .28em; font-weight: 900; }
+.admin-login-help { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.admin-login-help code { padding: 2px 5px; border-radius: 6px; background: rgba(255,255,255,.58); color: var(--ink); }
 .admin-tabs { display: inline-flex; gap: 6px; padding: 5px; margin: 2px 0 16px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.55); }
 .admin-tabs button { padding: 9px 14px; border-radius: 999px; color: var(--muted); background: transparent; }
 .admin-tabs button.active { color: var(--ink); background: #fff; box-shadow: 0 8px 24px rgba(43,35,30,.1); }
