@@ -1,54 +1,60 @@
 # Design QA
 
-- Source visual truth: `C:/Users/Lenovo/.codex/generated_images/019f19ae-f502-7a01-97de-03d5c441e7f7/exec-1f142e29-492b-4878-afb9-8b1d31a278d2.png`
-- Browser-rendered desktop implementation: `C:/Users/Lenovo/AppData/Local/Temp/calendar-desktop-final.png`
-- Browser-rendered mobile implementation: `C:/Users/Lenovo/AppData/Local/Temp/calendar-mobile-drawer.png`
-- Mobile preview state: `C:/Users/Lenovo/AppData/Local/Temp/calendar-mobile-preview.png`
-- Combined comparison evidence: `C:/Users/Lenovo/AppData/Local/Temp/calendar-design-comparison.png`
+- Source visual truth: `C:/Users/Lenovo/AppData/Local/Temp/codex-clipboard-6c38483d-a82f-450b-b93b-5b8f1a74d525.png`
+- Browser-rendered implementation: `C:/Users/Lenovo/AppData/Local/Temp/xiaozhushu-layout-final-v2.jpg`
+- Combined comparison evidence: `C:/Users/Lenovo/AppData/Local/Temp/xiaozhushu-layout-comparison-v2.png`
 - Source pixels: 1487 × 1058
-- Desktop implementation pixels / CSS viewport / density: 1440 × 1024 / 1440 × 1024 / 1×
-- Mobile implementation pixels / CSS viewport / density: 390 × 844 / 390 × 844 / 1×
-- Comparison normalization: both desktop artifacts were proportionally contained in equal 720 × 512 panels without cropping.
-- State: 日记胶片风首页，回忆日历抽屉打开，2026 年 7 月，静态数据回退模式。
+- Implementation capture pixels: 1472 × 1047
+- CSS viewport: 1487 × 1058
+- Browser device pixel ratio: 1.5
+- Comparison normalization: both screenshots were resized to 1487 × 1058 and placed side by side without cropping.
+- State: diary-film theme, July 2026 calendar, static fallback posts, page scrolled to top.
 
 ## Full-view comparison evidence
 
-The implementation keeps the selected reference’s warm paper palette, darkened and blurred page backdrop, right-side diary drawer, compact brand header, large month grid, photo-backed date cells, selected-day postage-note highlight, and adjacent day preview column. The implementation intentionally uses the repository’s real July records rather than the generated reference’s placeholder titles and counts.
+The implementation now follows the reference composition closely: a fixed 290 px diary sidebar on the left, a large two-line headline with an intro card on the right, compact action controls, three equal theme cards, a slim explanatory bar, and a single rounded feed surface containing a three-column post grid. Major section starts and the first-screen density align with the reference after the spacing pass.
 
 ## Focused region evidence
 
-The drawer calendar and day-preview column were inspected at 1440 × 1024. The mobile drawer was separately captured at 390 × 844 before and after scrolling so the month grid, selected-day summary, post preview, and “查看当天全部” action were all visible. Additional cropping was not needed because these captures keep all calendar controls readable at native density.
+No additional crop was needed because the combined 2974 × 1058 comparison keeps the headline, sidebar, theme selector, explanatory bar, feed heading, filters, and first row of cards readable. The sidebar/calendar and hero/feed transition were checked directly at native browser scale.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: existing Chinese display and UI font stack is preserved; month title, selected-day heading, counts, and secondary copy retain clear hierarchy without clipping or unintended wrapping.
-- Spacing and layout rhythm: the desktop drawer uses a stable two-column grid; the mobile drawer becomes a single scrollable column. Calendar cells, preview cards, radii, borders, and shadows maintain the reference’s diary-card rhythm.
-- Colors and visual tokens: warm ivory paper, coral “today” marker, pale-yellow selected date, muted ink, and soft backdrop blur follow the reference. Contrast remains sufficient for labels and controls.
-- Image quality and asset fidelity: real post thumbnails are used without forced aspect-ratio cropping inside the date cells. Text-only records fall back to the note treatment rather than a fake image.
-- Copy and content: “回忆日历”, “回到今天”, date/count labels, empty-day copy, and “查看当天全部” match the requested daily-record flow.
+- Fonts and typography: the heavy Chinese display headline, small uppercase labels, bold card titles, muted supporting copy, wrapping, and hierarchy closely match the reference. The existing project font stack is retained for compatibility.
+- Spacing and layout rhythm: desktop uses the same left-rail/main-canvas relationship, compact hero rhythm, three equal theme tracks, pill-shaped note bar, and rounded feed container. No horizontal overflow is present.
+- Colors and visual tokens: warm ivory paper, coral-pink accents, soft peach glow, dark ink, pale blue status surface, thin warm borders, and low-elevation shadows match the source direction.
+- Image quality and asset fidelity: existing real pig/friend media is preserved. Cards use landscape crops only in the compact homepage preview; the existing detail viewer continues to show uncropped media.
+- Copy and content: app-specific content and live/static record data are intentionally preserved instead of copying the mock’s placeholder records. Headline, daily index, calendar, theme labels, search, posting, and memory-calendar controls remain functional.
 
 ## Findings
 
-- No actionable P0, P1, or P2 differences remain.
-- P3: the generated reference shows several posts on one selected day, while the current seed dataset usually has one post per day. This is expected data variation; the implementation supports multiple preview cards when the backend contains them.
+- No actionable P0, P1, or P2 mismatch remains.
+- P3: the reference sidebar is slightly taller and shows fewer filter tags, while the implementation preserves the product’s existing filter controls.
+- P3: the reference example shows three polished July 19 records; the implementation displays the current repository/Supabase fallback data, including any user-created text-only record. This is expected data variation rather than layout drift.
 
 ## Primary interactions tested
 
-- Sidebar month renders 42 date cells with post dots and counts.
-- Clicking a sidebar date filters the feed and updates its heading.
-- Clearing the date restores the complete feed.
-- Opening the memory drawer renders 42 date cells, thumbnails, counts, and the selected-day preview.
-- Selecting a drawer date updates the preview without leaving the drawer.
-- “查看当天全部” closes the drawer and applies the same date to the feed.
-- Mobile drawer fills the 390 × 844 viewport, has no horizontal overflow, and scrolls from the month grid to the day preview.
-- Page console was checked after desktop and mobile interactions; no page-origin errors or warnings were present.
+- The memory-calendar button opens the large calendar drawer and exposes the selected-day preview plus “查看当天全部”.
+- A post card opens the existing post-detail dialog.
+- Desktop renders three equal feed columns at 1487 × 1058 without horizontal overflow.
+- Mobile renders at 390 × 844 without horizontal overflow; the theme cards remain horizontally scrollable and the rest of the page stacks normally.
 
 ## Comparison history
 
-- Pass 1: no P0/P1/P2 visual mismatch found. No visual fix iteration was required.
+- Pass 1: P2 vertical-density drift—actions, theme cards, explanatory bar, and feed began too low compared with the reference.
+- Fix: reduced the desktop hero row gap, removed redundant action margin, tightened theme spacing, reduced the explanatory bar height, and removed excess hero bottom padding.
+- Pass 2: the revised combined evidence shows the feed beginning at approximately the same first-screen position as the reference; no P0/P1/P2 findings remain.
 
-## Follow-up polish
+## Implementation Checklist
 
-- P3: once several records exist on the same date, re-check the visual density of a six-item preview list on a shorter laptop viewport.
+- [x] Match the desktop left sidebar and main-canvas proportions.
+- [x] Match the headline/intro-card composition.
+- [x] Match the three-card selector and slim explanatory bar.
+- [x] Present the first feed row as three equal cards.
+- [x] Preserve calendar, post-detail, search, publishing, and responsive behavior.
+
+## Follow-up Polish
+
+- P3: if desired, the sidebar’s calendar and note cards can be made a little taller for pixel-level closeness, but the current version better accommodates the functional tag filters.
 
 final result: passed
