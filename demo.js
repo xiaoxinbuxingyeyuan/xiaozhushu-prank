@@ -635,17 +635,16 @@ async function createCommunity(event) {
   const button = event.submitter;
   button.disabled = true;
   try {
-    const { data, error } = await state.client.from("communities").insert({
-      name,
-      description,
-      owner_id: state.user.id,
-      avatar_seed: crypto.randomUUID()
-    }).select("id,name,description,avatar_seed,owner_id,created_at").single();
+    const { data, error } = await state.client.rpc("create_community", {
+      community_name: name,
+      community_description: description
+    });
     if (error) throw error;
+    const community = Array.isArray(data) ? data[0] : data;
     closeLayer("community");
     els.communityForm.reset();
     await loadCommunities();
-    await setActiveCommunity(data.id);
+    if (community?.id) await setActiveCommunity(community.id);
     showToast("小猪社区创建好了，可以邀请朋友了。", "success", "ph-check-circle");
   } catch (error) {
     showToast(error.message || "社区创建失败", "error", "ph-warning-circle");
