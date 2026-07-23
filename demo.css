@@ -1583,6 +1583,10 @@ body[data-theme="dream"] .detail-modal {
 .auth-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 18px 0; padding: 6px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.54); }
 .auth-tabs button { min-height: 40px; border-radius: 999px; color: var(--muted); background: transparent; font-weight: 900; }
 .auth-tabs button.active { color: var(--ink); background: #fff; box-shadow: 0 10px 24px rgba(43,35,30,.1); }
+.auth-session-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 -4px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent), transparent 70%); border-radius: 16px; background: rgba(255,255,255,.58); color: var(--muted); font-size: 12px; }
+.auth-session-bar span { min-width: 0; display: inline-flex; align-items: center; gap: 6px; }
+.auth-session-bar b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.auth-session-bar button { flex: 0 0 auto; padding: 7px 10px; border-radius: 999px; color: #b94646; background: rgba(255,242,240,.84); font-weight: 900; }
 .auth-panel { display: none; }
 .auth-panel.active { display: block; animation: panelPop .18s ease both; }
 .account-dialog input { min-height: 48px; font-weight: 700; }
@@ -1590,6 +1594,9 @@ body[data-theme="dream"] .detail-modal {
 .text-link { display: block; width: 100%; margin: 12px auto 0; padding: 8px; color: var(--accent); background: transparent; font-weight: 900; text-align: center; }
 .text-link.danger { color: #b94646; }
 .account-hint { margin: 12px 0 0; padding: 12px 14px; border: 1px dashed color-mix(in srgb,var(--accent),transparent 35%); border-radius: 16px; color: var(--muted); background: rgba(255,255,255,.45); font-size: 13px; line-height: 1.7; }
+.recovery-code-form { margin-top: 12px; padding: 14px; border: 1px solid rgba(255,255,255,.68); border-radius: 20px; background: linear-gradient(135deg, rgba(255,255,255,.58), rgba(255,247,239,.72)); }
+.recovery-code-form[hidden] { display: none; }
+#auth-recover-code { text-align: center; letter-spacing: .22em; font-weight: 900; }
 .account-card { display: flex; align-items: center; gap: 13px; margin: 8px 0 14px; padding: 15px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(135deg, rgba(255,255,255,.72), color-mix(in srgb, var(--accent-2), white 72%)); box-shadow: 0 16px 38px rgba(43,35,30,.08); }
 .account-card .avatar { width: 54px; height: 54px; flex: 0 0 54px; font-size: 24px; }
 .account-card strong { display: block; font-size: 18px; }

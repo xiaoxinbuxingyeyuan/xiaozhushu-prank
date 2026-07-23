@@ -127,6 +127,7 @@ const els = {
   authLoginForm: $("#auth-login-form"),
   authRegisterForm: $("#auth-register-form"),
   authRecoverForm: $("#auth-recover-form"),
+  authRecoveryCodeForm: $("#auth-recovery-code-form"),
   authResetForm: $("#auth-reset-form"),
   communityLayer: $("#community-layer"),
   communityForm: $("#community-form"),
@@ -536,6 +537,7 @@ async function setActiveCommunity(id = "") {
 }
 
 function setAuthMode(mode = "login") {
+  updateAuthSessionBar();
   $$(".auth-tabs button").forEach(button => button.classList.toggle("active", button.dataset.authMode === mode));
   $$("[data-auth-panel]").forEach(panel => panel.classList.toggle("active", panel.dataset.authPanel === mode));
   if (mode === "account") updateAccountPanel();
@@ -549,7 +551,15 @@ function setAuthMode(mode = "login") {
   window.setTimeout(() => $(focusTarget)?.focus(), 80);
 }
 
+function updateAuthSessionBar() {
+  const bar = $("#auth-session-bar");
+  if (!bar) return;
+  bar.hidden = !state.user;
+  $("#auth-session-email").textContent = state.user?.email || "已登录";
+}
+
 function updateAccountPanel() {
+  updateAuthSessionBar();
   const avatar = $("#account-avatar");
   const seed = state.profile?.avatar_seed || state.user?.id || "account-pig";
   avatar?.setAttribute("style", avatarPalette(seed));
@@ -670,9 +680,44 @@ async function sendPasswordRecovery(event) {
       redirectTo: `${authRedirectUrl()}${authRedirectUrl().includes("?") ? "&" : "?"}recovery=1`
     });
     if (error) throw error;
-    showToast("重置密码邮件已发送，点开邮件里的链接即可设置新密码。", "success", "ph-paper-plane-tilt");
+    els.authRecoveryCodeForm.hidden = false;
+    $("#auth-recover-code").focus();
+    showToast("重置密码邮件已发送：点链接或填写验证码都可以重设密码。", "success", "ph-paper-plane-tilt");
   } catch (error) {
     showToast(error.message || "重置邮件发送失败", "error", "ph-warning-circle");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function updatePasswordWithRecoveryCode(event) {
+  event.preventDefault();
+  const email = $("#auth-recover-email").value.trim();
+  const token = $("#auth-recover-code").value.trim().replace(/\s+/g, "");
+  const password = $("#auth-recover-new-password").value;
+  const confirm = $("#auth-recover-confirm").value;
+  if (!email) return showToast("请先填写邮箱账号", "error", "ph-warning-circle");
+  if (!/^\d{6,8}$/.test(token)) return showToast("请输入邮件里的 6-8 位数字验证码", "error", "ph-warning-circle");
+  if (password !== confirm) return showToast("两次输入的新密码不一致", "error", "ph-warning-circle");
+  const button = event.submitter || $("#auth-recovery-code-button");
+  button.disabled = true;
+  try {
+    const { data, error } = await state.client.auth.verifyOtp({ email, token, type: "recovery" });
+    if (error) throw error;
+    state.user = data.user || null;
+    const { error: updateError } = await state.client.auth.updateUser({ password });
+    if (updateError) throw updateError;
+    await loadCurrentProfile();
+    await loadCommunities();
+    showToast("密码已重置，以后可以用新密码登录。", "success", "ph-lock-key-open");
+    setAuthMode("account");
+    await refreshFeed();
+    await loadCalendarPosts();
+  } catch (error) {
+    const message = error.message?.toLowerCase().includes("expired")
+      ? "验证码已过期，请重新发送重置邮件"
+      : error.message || "验证码重置失败";
+    showToast(message, "error", "ph-warning-circle");
   } finally {
     button.disabled = false;
   }
@@ -1983,7 +2028,8 @@ async function initializeBackend() {
   try {
     const params = new URLSearchParams(location.search);
     const adminMode = params.has("admin");
-    const recoveryMode = params.has("recovery");
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+    const recoveryMode = params.has("recovery") || hashParams.get("type") === "recovery";
     state.client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
@@ -2005,13 +2051,14 @@ async function initializeBackend() {
     } else {
       renderCommunityControls();
     }
-    state.client.auth.onAuthStateChange((_event, nextSession) => {
+    state.client.auth.onAuthStateChange((event, nextSession) => {
       state.user = nextSession?.user || null;
       window.setTimeout(async () => {
         if (state.user) {
           await loadCurrentProfile();
           await loadCommunities();
           if (state.pendingInviteToken) await joinInviteFromUrl();
+          if (event === "PASSWORD_RECOVERY") openAuthDialog(false, "设置一个新密码，以后就可以直接用账号密码登录。", "reset");
         } else {
           state.profile = null;
           state.isAdmin = false;
@@ -2102,10 +2149,12 @@ function bindEvents() {
   els.authLoginForm?.addEventListener("submit", loginWithPassword);
   els.authRegisterForm?.addEventListener("submit", registerWithPassword);
   els.authRecoverForm?.addEventListener("submit", sendPasswordRecovery);
+  els.authRecoveryCodeForm?.addEventListener("submit", updatePasswordWithRecoveryCode);
   els.authResetForm?.addEventListener("submit", updatePasswordFromRecovery);
   $("#account-edit-profile")?.addEventListener("click", () => { closeLayer("auth"); openProfileDialog(false); });
   $("#account-switch")?.addEventListener("click", signOutAndSwitch);
   $("#account-logout")?.addEventListener("click", async () => { await signOutAndSwitch(); closeLayer("auth"); });
+  $("#auth-inline-logout")?.addEventListener("click", signOutAndSwitch);
   els.communityForm?.addEventListener("submit", createCommunity);
   $("#admin-login-form").addEventListener("submit", sendAdminLink);
   $("#admin-verify-form").addEventListener("submit", verifyAdminCode);
