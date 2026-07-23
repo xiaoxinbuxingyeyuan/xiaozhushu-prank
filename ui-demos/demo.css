@@ -154,9 +154,61 @@ body[data-theme="dream"] .ambient {
 }
 
 .demo-hero {
+  position: relative;
   width: min(1180px, calc(100% - 36px));
   margin: 0 auto;
   padding: 34px 0 20px;
+}
+
+.page-pig-sticker,
+.note-pig-sticker,
+.memory-pig-sticker {
+  margin: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.page-pig-sticker {
+  position: absolute;
+  z-index: 2;
+  width: 82px;
+  padding: 6px 6px 9px;
+  border: 1px solid rgba(92, 61, 49, .12);
+  border-radius: 15px 15px 20px 12px;
+  background: rgba(255, 253, 247, .9);
+  box-shadow: 0 15px 34px rgba(75, 45, 28, .14);
+  text-align: center;
+  animation: stickerBob 6.5s ease-in-out infinite;
+}
+
+.page-pig-sticker img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 11px;
+}
+
+.page-pig-sticker figcaption {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+}
+
+.sticker-hello {
+  right: -108px;
+  top: 122px;
+  transform: rotate(8deg);
+}
+
+.sticker-peek {
+  left: -98px;
+  top: 338px;
+  width: 72px;
+  transform: rotate(-9deg);
+  animation-delay: -2.4s;
 }
 
 .back-link {
@@ -400,7 +452,32 @@ h1 {
 }
 
 .note-card {
+  position: relative;
+  overflow: visible;
+  padding-right: 58px;
   transform: rotate(-2deg);
+}
+
+.note-pig-sticker {
+  position: absolute;
+  right: -11px;
+  top: -16px;
+  width: 62px;
+  height: 62px;
+  padding: 4px;
+  border: 1px solid rgba(92, 61, 49, .12);
+  border-radius: 19px 15px 22px 12px;
+  background: rgba(255, 253, 247, .94);
+  box-shadow: 0 12px 25px rgba(75, 45, 28, .15);
+  transform: rotate(8deg);
+}
+
+.note-pig-sticker img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: 15px 11px 17px 9px;
 }
 
 .calendar-trigger {
@@ -1325,9 +1402,43 @@ body[data-theme="dream"] .detail-modal {
 .memory-legend span { display: inline-flex; align-items: center; gap: 5px; }
 
 .memory-day {
+  position: relative;
+  overflow: hidden;
   padding: 16px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.memory-day > *:not(.memory-pig-sticker) {
+  position: relative;
+  z-index: 1;
+}
+
+.memory-pig-sticker {
+  position: absolute;
+  z-index: 0;
+  right: 18px;
+  bottom: 74px;
+  width: 116px;
+  opacity: .12;
+  transform: rotate(7deg);
+  text-align: center;
+}
+
+.memory-pig-sticker img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 32px;
+  filter: saturate(.7);
+}
+
+.memory-pig-sticker figcaption {
+  margin-top: 6px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .memory-day-header {
@@ -1458,7 +1569,21 @@ body.modal-open {
   }
 }
 
+@keyframes stickerBob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -7px;
+  }
+}
+
 @media (max-width: 1220px) {
+  .page-pig-sticker {
+    display: none;
+  }
+
   .feed {
     column-count: 3;
   }
@@ -1549,6 +1674,10 @@ body.modal-open {
     scroll-snap-align: start;
   }
 
+  .note-card {
+    padding-right: 64px;
+  }
+
   .feed-toolbar {
     display: grid;
   }
@@ -1606,6 +1735,7 @@ body.modal-open {
   .memory-day { min-height: 500px; }
   .memory-calendar-grid { grid-template-rows: repeat(6, minmax(68px, 1fr)); }
   .memory-preview { grid-template-columns: minmax(0, 1fr) 76px; }
+  .memory-pig-sticker { right: 24px; bottom: 72px; width: 96px; opacity: .09; }
 }
 
 @media (prefers-reduced-motion: reduce) {
