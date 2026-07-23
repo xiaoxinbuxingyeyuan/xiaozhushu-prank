@@ -1344,6 +1344,96 @@ async function resolveReport(id) {
   else await loadAdminReports();
 }
 
+async function loadAdminPosts() {
+  $("#admin-summary").innerHTML = `<div><strong>加载中</strong><span>正在整理所有帖子</span></div>`;
+  $("#admin-list").innerHTML = `<div class="comments-empty"><i class="ph ph-spinner-gap"></i><p>正在翻管理员账本……</p></div>`;
+  const { data, error } = await state.client
+    .from("posts")
+    .select(`id,legacy_key,title,body,tags,author_id,author_name,avatar_seed,created_at,status,
+      profile:profiles!posts_author_id_fkey(display_name,avatar_seed,role),
+      media:post_media(id,media_kind,public_url,storage_path,poster_url,sort_order),
+      comments(count),likes:post_likes(count)`)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) return showToast("帖子管理列表加载失败", "error", "ph-warning-circle");
+  const posts = (data || []).map(mapDbPost);
+  const hidden = posts.filter(post => post.status === "hidden").length;
+  const published = posts.length - hidden;
+  $("#admin-summary").innerHTML = `
+    <div><strong>${posts.length}</strong><span>最近帖子</span></div>
+    <div><strong>${published}</strong><span>公开显示</span></div>
+    <div><strong>${hidden}</strong><span>已隐藏</span></div>`;
+  $("#admin-list").innerHTML = posts.length ? posts.map(adminPostTemplate).join("") : `<div class="comments-empty"><i class="ph ph-tray"></i><p>还没有数据库帖子</p></div>`;
+}
+
+function adminPostTemplate(post) {
+  const cover = post.media?.find(item => item.kind === "image" || item.posterUrl);
+  const thumb = cover ? assetUrl(cover.posterUrl || cover.url) : "";
+  const statusLabel = post.status === "hidden" ? "已隐藏" : "公开中";
+  const statusIcon = post.status === "hidden" ? "ph-eye-slash" : "ph-eye";
+  return `<article class="admin-post-item${post.status === "hidden" ? " hidden-post" : ""}" data-admin-post="${escapeHTML(post.id)}">
+    ${thumb ? `<img class="admin-post-thumb" src="${escapeHTML(thumb)}" alt="" loading="lazy" />` : `<div class="admin-post-thumb text"><i class="ph ph-note-pencil"></i></div>`}
+    <div class="admin-post-main">
+      <div class="admin-post-meta"><span><i class="ph ${statusIcon}"></i>${statusLabel}</span><span>${formatDate(post.createdAt, true)}</span><span>${escapeHTML(post.author)}</span></div>
+      <h3>${escapeHTML(postLabel(post))}</h3>
+      <p>${escapeHTML(postExcerpt(post, 90))}</p>
+      <small><i class="ph ph-heart"></i>${post.likeCount || 0}　<i class="ph ph-chat-circle"></i>${post.commentCount || 0}　${(post.tags || []).slice(0, 3).map(tag => `#${escapeHTML(tag)}`).join(" ")}</small>
+    </div>
+    <div class="admin-post-actions">
+      <button type="button" data-admin-open-post="${escapeHTML(post.id)}">打开</button>
+      <button type="button" data-admin-toggle-post="${escapeHTML(post.id)}" data-next-status="${post.status === "hidden" ? "published" : "hidden"}">${post.status === "hidden" ? "恢复" : "隐藏"}</button>
+      <button class="danger" type="button" data-admin-delete-post="${escapeHTML(post.id)}">删除</button>
+    </div>
+  </article>`;
+}
+
+async function setAdminTab(tab) {
+  $$(".admin-tabs button").forEach(button => button.classList.toggle("active", button.dataset.adminTab === tab));
+  if (tab === "posts") await loadAdminPosts();
+  else await loadAdminReports();
+}
+
+async function getAdminPost(id) {
+  const { data, error } = await state.client
+    .from("posts")
+    .select(`id,legacy_key,title,body,tags,author_id,author_name,avatar_seed,created_at,status,
+      profile:profiles!posts_author_id_fkey(display_name,avatar_seed,role),
+      media:post_media(id,media_kind,public_url,storage_path,poster_url,sort_order),
+      comments(count),likes:post_likes(count)`)
+    .eq("id", id)
+    .single();
+  if (error) {
+    showToast("帖子读取失败", "error", "ph-warning-circle");
+    return null;
+  }
+  return mapDbPost(data);
+}
+
+async function toggleAdminPost(id, status) {
+  const confirmText = status === "hidden" ? "确定隐藏这条帖子吗？普通访客将看不到它。" : "确定恢复这条帖子为公开吗？";
+  if (!window.confirm(confirmText)) return;
+  const { error } = await state.client.from("posts").update({ status }).eq("id", id);
+  if (error) return showToast("帖子状态更新失败", "error", "ph-warning-circle");
+  showToast(status === "hidden" ? "帖子已隐藏" : "帖子已恢复公开", "success", "ph-check-circle");
+  await loadAdminPosts();
+  await refreshFeed();
+  await loadCalendarPosts();
+}
+
+async function hardDeleteAdminPost(id) {
+  if (!window.confirm("确定永久删除这条帖子吗？这会同时删除数据库记录，无法撤销。")) return;
+  const post = await getAdminPost(id);
+  if (!post) return;
+  const paths = post.media.map(item => item.storagePath).filter(Boolean);
+  if (paths.length) await state.client.storage.from("post-media").remove(paths);
+  const { error } = await state.client.from("posts").delete().eq("id", id);
+  if (error) return showToast("永久删除失败", "error", "ph-warning-circle");
+  showToast("帖子已永久删除", "success", "ph-check-circle");
+  await loadAdminPosts();
+  await refreshFeed();
+  await loadCalendarPosts();
+}
+
 function subscribeRealtime() {
   if (!state.backend) return;
   state.realtime?.unsubscribe();
@@ -1519,6 +1609,16 @@ function bindEvents() {
   $("#admin-list").addEventListener("click", event => {
     const id = event.target.closest("[data-resolve-report]")?.dataset.resolveReport;
     if (id) resolveReport(id);
+    const openId = event.target.closest("[data-admin-open-post]")?.dataset.adminOpenPost;
+    if (openId) getAdminPost(openId).then(post => post && openPost(post));
+    const toggleButton = event.target.closest("[data-admin-toggle-post]");
+    if (toggleButton) toggleAdminPost(toggleButton.dataset.adminTogglePost, toggleButton.dataset.nextStatus);
+    const deleteId = event.target.closest("[data-admin-delete-post]")?.dataset.adminDeletePost;
+    if (deleteId) hardDeleteAdminPost(deleteId);
+  });
+  $(".admin-tabs")?.addEventListener("click", event => {
+    const tab = event.target.closest("[data-admin-tab]")?.dataset.adminTab;
+    if (tab) setAdminTab(tab);
   });
   $$('[data-close]').forEach(button => button.addEventListener("click", () => closeLayer(button.dataset.close)));
   document.addEventListener("click", event => {
