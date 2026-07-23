@@ -1218,7 +1218,28 @@ body[data-theme="dream"] .detail-modal {
   align-items: center;
 }
 
-.lab-actions { margin-top: 16px; flex-wrap: wrap; gap: 10px; }
+.lab-actions {
+  margin-top: 16px;
+  flex-wrap: nowrap;
+  gap: 10px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.lab-actions::-webkit-scrollbar { display: none; }
+
+.lab-actions > * {
+  flex: 0 0 auto;
+}
+
+.lab-actions .community-switch-button,
+.lab-actions .hero-community-select {
+  flex: 1 1 auto;
+  min-width: 150px;
+}
 .mode-pill,
 .lab-icon-button,
 .lab-primary-button { min-height: 44px; gap: 8px; padding: 0 16px; border-radius: 999px; font-weight: 900; }
@@ -1939,19 +1960,19 @@ body.modal-open {
 }
 /* v2 community layer */
 .community-switch-button {
-  min-width: 176px;
+  min-width: 150px;
   max-width: 260px;
 }
 
 .community-switch-button span {
-  max-width: 190px;
+  max-width: 176px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .hero-community-select {
-  min-width: 210px;
+  min-width: 160px;
   height: 46px;
   padding: 0 14px;
   border-color: rgba(62, 43, 32, 0.16);
