@@ -546,6 +546,13 @@ function openAuthDialog(required = false, copy = "") {
   return new Promise(resolve => { state.authResolver = resolve; });
 }
 
+function authRedirectUrl() {
+  const params = new URLSearchParams();
+  if (state.pendingInviteToken) params.set("invite", state.pendingInviteToken);
+  const query = params.toString();
+  return `${location.origin}${location.pathname}${query ? `?${query}` : ""}`;
+}
+
 async function sendAuthCode(event) {
   event.preventDefault();
   if (!state.backend) return showToast("Supabase 还没有连接，暂时不能登录。", "error", "ph-cloud-slash");
@@ -557,7 +564,7 @@ async function sendAuthCode(event) {
     const { error } = await state.client.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${location.origin}${location.pathname}`,
+        emailRedirectTo: authRedirectUrl(),
         shouldCreateUser: true
       }
     });
@@ -565,7 +572,7 @@ async function sendAuthCode(event) {
     state.authEmail = email;
     els.authVerifyForm.hidden = false;
     $("#auth-token").focus();
-    showToast("验证码已发送，请查看邮箱。", "success", "ph-paper-plane-tilt");
+    showToast("登录邮件已发送：收到链接就点链接，收到验证码就填这里。", "success", "ph-paper-plane-tilt");
   } catch (error) {
     showToast(error.message || "验证码发送失败", "error", "ph-warning-circle");
   } finally {
@@ -1799,10 +1806,14 @@ async function initializeBackend() {
     state.client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
-    if (adminMode && params.has("code")) {
+    if (params.has("code")) {
       const { error } = await state.client.auth.exchangeCodeForSession(location.href);
       if (error) throw error;
-      history.replaceState(null, "", `${location.origin}${location.pathname}?admin=1`);
+      const cleanParams = new URLSearchParams();
+      if (adminMode) cleanParams.set("admin", "1");
+      if (state.pendingInviteToken) cleanParams.set("invite", state.pendingInviteToken);
+      const cleanQuery = cleanParams.toString();
+      history.replaceState(null, "", `${location.origin}${location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
     }
     let { data: { session } } = await state.client.auth.getSession();
     state.user = session?.user || null;
