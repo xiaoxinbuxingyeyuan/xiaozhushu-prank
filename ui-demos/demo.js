@@ -1317,11 +1317,51 @@ async function sendAdminLink(event) {
   event.preventDefault();
   const email = $("#admin-email").value.trim();
   const redirect = `${location.origin}${location.pathname}?admin=1`;
-  const { error } = await state.client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect } });
+  const button = $("#admin-send-button");
+  button.disabled = true;
+  button.textContent = "发送中";
+  const { error } = await state.client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect, shouldCreateUser: true } });
+  button.disabled = false;
+  button.textContent = "重新发送";
   const message = error?.message?.toLowerCase().includes("rate")
     ? "邮件发送太频繁了，请等几分钟后再试"
-    : error?.message || "登录链接已发送，请检查邮箱";
-  showToast(error ? message : "登录链接已发送，请检查邮箱", error ? "error" : "success", error ? "ph-warning-circle" : "ph-envelope-simple");
+    : error?.message || "验证码已发送，请检查邮箱";
+  if (!error) {
+    $("#admin-verify-form").hidden = false;
+    $("#admin-token").focus();
+  }
+  showToast(error ? message : "验证码已发送，请检查邮箱", error ? "error" : "success", error ? "ph-warning-circle" : "ph-envelope-simple");
+}
+
+async function verifyAdminCode(event) {
+  event.preventDefault();
+  const email = $("#admin-email").value.trim();
+  const token = $("#admin-token").value.trim().replace(/\s+/g, "");
+  if (!/^\d{6}$/.test(token)) {
+    showToast("请输入邮件里的 6 位验证码", "error", "ph-warning-circle");
+    return;
+  }
+  const submit = event.submitter || $("#admin-verify-form button[type='submit']");
+  submit.disabled = true;
+  submit.textContent = "验证中";
+  const { data, error } = await state.client.auth.verifyOtp({ email, token, type: "email" });
+  submit.disabled = false;
+  submit.textContent = "验证进入";
+  if (error) {
+    const message = error.message?.toLowerCase().includes("expired") ? "验证码已过期，请重新发送" : error.message || "验证码验证失败";
+    showToast(message, "error", "ph-warning-circle");
+    return;
+  }
+  state.user = data.user || null;
+  if (state.user) await loadCurrentProfile();
+  if (!state.isAdmin) {
+    showToast("邮箱已登录，但还没有管理员权限。请先在 Supabase 将这个邮箱设为 admin。", "error", "ph-shield-warning");
+    return;
+  }
+  $("#admin-login-view").hidden = true;
+  $("#admin-content-view").hidden = false;
+  showToast("管理员登录成功", "success", "ph-shield-check");
+  await loadAdminReports();
 }
 
 async function loadAdminReports() {
@@ -1549,6 +1589,7 @@ function bindEvents() {
   $("#profile-button").addEventListener("click", () => state.backend ? openProfileDialog(false) : showToast("配置 Supabase 后即可创建匿名身份", "error", "ph-cloud-slash"));
   $("#admin-entry").addEventListener("click", openAdmin);
   $("#admin-login-form").addEventListener("submit", sendAdminLink);
+  $("#admin-verify-form").addEventListener("submit", verifyAdminCode);
   els.publishForm.addEventListener("submit", submitPost);
   els.profileForm.addEventListener("submit", saveProfile);
   $("#comment-form").addEventListener("submit", submitComment);

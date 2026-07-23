@@ -25,7 +25,11 @@
 - 作者可以删除自己的帖子。
 - GitHub Pages 已加载最新 `demo.css` / `demo.js` 版本资源。
 
+## 管理员登录
+
+- 管理员登录已改为邮箱 6 位验证码：访问 `/?admin=1`，输入管理员邮箱，收验证码后进入。
+- 管理员权限仍由 `public.profiles.role = 'admin'` 控制；第一次用邮箱登录后，需要在 Supabase SQL Editor 执行 `supabase/admin-bootstrap.sql`，把对应邮箱升级为管理员。
+
 ## 暂缓项
 
-- 管理员邮箱：当前邮箱验证码/魔法链接流程暂缓，不作为正式上线阻塞项。普通访客不需要邮箱即可使用。
 - Cloudflare Turnstile：如果你准备把链接公开给更多人，建议配置；只是发给朋友试玩，可以暂时不配。
