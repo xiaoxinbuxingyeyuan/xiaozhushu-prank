@@ -6,6 +6,7 @@ const VIDEO_MAX_BYTES = 50 * 1024 * 1024;
 const VIDEO_MAX_SECONDS = 60;
 const LARGE_UPLOAD_THRESHOLD = 6 * 1024 * 1024;
 const BOOKMARK_KEY = "dzd-local-bookmarks-v2";
+const COMMUNITY_KEY = "dzd-active-community-v1";
 
 const THEME_COPY = {
   diary: { icon: "ph-camera", title: "日记胶片风", heading: "今天也在认真审猪", text: "温暖、真实、生活记录感；帖子像拍立得贴在日记本里。" },
@@ -62,6 +63,12 @@ const state = {
   user: null,
   profile: null,
   isAdmin: false,
+  communities: [],
+  activeCommunityId: localStorage.getItem(COMMUNITY_KEY) || "",
+  activeCommunity: null,
+  pendingInviteToken: new URLSearchParams(location.search).get("invite") || "",
+  authResolver: null,
+  authEmail: "",
   posts: [],
   staticPosts: [],
   page: 0,
@@ -117,6 +124,16 @@ const els = {
   mediaInput: $("#media-input"),
   mediaPreviews: $("#media-previews"),
   uploadProgress: $("#upload-progress"),
+  authLayer: $("#auth-layer"),
+  authLoginForm: $("#auth-login-form"),
+  authVerifyForm: $("#auth-verify-form"),
+  communityLayer: $("#community-layer"),
+  communityForm: $("#community-form"),
+  communitySelect: $("#community-select"),
+  communityTitle: $("#community-title"),
+  communityDescription: $("#community-description"),
+  communitySwitchLabel: $("#community-switch-label"),
+  inviteButton: $("#invite-button"),
   profileLayer: $("#profile-layer"),
   profileForm: $("#profile-form"),
   adminLayer: $("#admin-layer"),
@@ -295,17 +312,19 @@ async function loadCalendarPosts() {
   const start = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth(), 1);
   const end = new Date(state.calendarMonth.getFullYear(), state.calendarMonth.getMonth() + 1, 1);
   try {
-    if (state.backend) {
-      const { data, error } = await state.client
+    if (state.backend && communityMode()) {
+      let query = state.client
         .from("posts")
-        .select(`id,legacy_key,title,body,tags,author_id,author_name,avatar_seed,created_at,status,
+        .select(`id,legacy_key,title,body,tags,community_id,author_id,author_name,avatar_seed,created_at,status,
           profile:profiles!posts_author_id_fkey(display_name,avatar_seed,role),
           media:post_media(id,media_kind,public_url,storage_path,poster_url,sort_order)`)
         .eq("status", "published")
+        .eq("community_id", state.activeCommunityId)
         .gte("created_at", start.toISOString())
         .lt("created_at", end.toISOString())
         .order("created_at", { ascending: true })
         .limit(200);
+      const { data, error } = await query;
       if (error) throw error;
       state.calendarPosts = (data || []).map(mapDbPost);
     } else {
@@ -403,6 +422,10 @@ function closeLayer(name) {
     state.profileResolver(false);
     state.profileResolver = null;
   }
+  if (name === "auth" && state.authResolver) {
+    state.authResolver(false);
+    state.authResolver = null;
+  }
 }
 
 function setBackendMode(online, message = "") {
@@ -413,6 +436,270 @@ function setBackendMode(online, message = "") {
     : `<i class="ph ph-cloud-slash"></i><span>静态浏览</span>`;
   els.offlineBanner.hidden = online;
   if (!online && message) els.offlineBanner.querySelector("span").textContent = message;
+}
+
+function isLoggedInUser() {
+  return Boolean(state.user && !state.user.is_anonymous);
+}
+
+function isDefaultProfileName(name = "") {
+  return !String(name || "").trim() || name === "匿名小猪";
+}
+
+function communityMode() {
+  return Boolean(state.activeCommunityId && state.activeCommunity);
+}
+
+function roleForCommunity(id = state.activeCommunityId) {
+  return state.communities.find(item => item.id === id)?.role || "";
+}
+
+function canModeratePost(post) {
+  return Boolean(state.isAdmin || post.authorId === state.user?.id || (post.communityId && roleForCommunity(post.communityId) === "owner"));
+}
+
+function renderCommunityControls() {
+  const active = state.activeCommunity;
+  const hasBackend = state.backend;
+  if (els.communitySelect) {
+    const options = [`<option value="">示例小猪</option>`].concat(
+      state.communities.map(item => `<option value="${escapeHTML(item.id)}">${escapeHTML(item.name)}${item.role === "owner" ? " · 我创建的" : ""}</option>`)
+    );
+    els.communitySelect.innerHTML = options.join("");
+    els.communitySelect.value = active?.id || "";
+    els.communitySelect.disabled = !hasBackend || !state.communities.length;
+  }
+  if (els.communityTitle) els.communityTitle.textContent = active?.name || "原生小猪示例区";
+  if (els.communityDescription) {
+    els.communityDescription.textContent = active
+      ? (active.description || "这是你和朋友的小猪日常社区。成员都可以看、发帖、评论和点赞。")
+      : "先看看系统准备的小猪日常；登录后可以创建自己的小窝，邀请朋友一起发帖。";
+  }
+  if (els.communitySwitchLabel) els.communitySwitchLabel.textContent = active?.name || "示例小猪";
+  if (els.inviteButton) els.inviteButton.hidden = !active;
+  const publishText = $("#publish-button span");
+  if (publishText) publishText.textContent = active ? "记录今天" : "创建后发帖";
+}
+
+function normalizeCommunityRow(row) {
+  const community = row.community || row.communities || row;
+  return {
+    id: community.id,
+    name: community.name,
+    description: community.description || "",
+    avatarSeed: community.avatar_seed || community.id,
+    ownerId: community.owner_id,
+    role: row.role || (community.owner_id === state.user?.id ? "owner" : "member"),
+    createdAt: community.created_at
+  };
+}
+
+async function loadCommunities() {
+  if (!state.backend || !isLoggedInUser()) {
+    state.communities = [];
+    state.activeCommunityId = "";
+    state.activeCommunity = null;
+    localStorage.removeItem(COMMUNITY_KEY);
+    renderCommunityControls();
+    return [];
+  }
+  const { data, error } = await state.client
+    .from("community_members")
+    .select("role,created_at,community:communities(id,name,description,avatar_seed,owner_id,created_at)")
+    .eq("user_id", state.user.id)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  state.communities = (data || []).map(normalizeCommunityRow).filter(item => item.id);
+  if (state.activeCommunityId && !state.communities.some(item => item.id === state.activeCommunityId)) {
+    state.activeCommunityId = "";
+    localStorage.removeItem(COMMUNITY_KEY);
+  }
+  if (!state.activeCommunityId && state.communities[0]) {
+    state.activeCommunityId = state.communities[0].id;
+    localStorage.setItem(COMMUNITY_KEY, state.activeCommunityId);
+  }
+  state.activeCommunity = state.communities.find(item => item.id === state.activeCommunityId) || null;
+  renderCommunityControls();
+  return state.communities;
+}
+
+async function setActiveCommunity(id = "") {
+  state.activeCommunityId = id;
+  if (id) localStorage.setItem(COMMUNITY_KEY, id);
+  else localStorage.removeItem(COMMUNITY_KEY);
+  state.activeCommunity = state.communities.find(item => item.id === id) || null;
+  state.selectedDate = null;
+  state.page = 0;
+  state.posts = [];
+  renderCommunityControls();
+  await refreshFeed();
+  await loadCalendarPosts();
+}
+
+function openAuthDialog(required = false, copy = "") {
+  if (copy) $("#auth-copy").textContent = copy;
+  if (!required) {
+    openLayer("auth");
+    return true;
+  }
+  openLayer("auth");
+  return new Promise(resolve => { state.authResolver = resolve; });
+}
+
+async function sendAuthCode(event) {
+  event.preventDefault();
+  if (!state.backend) return showToast("Supabase 还没有连接，暂时不能登录。", "error", "ph-cloud-slash");
+  const email = $("#auth-email").value.trim();
+  if (!email) return;
+  const button = event.submitter || $("#auth-send-button");
+  button.disabled = true;
+  try {
+    const { error } = await state.client.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${location.origin}${location.pathname}`,
+        shouldCreateUser: true
+      }
+    });
+    if (error) throw error;
+    state.authEmail = email;
+    els.authVerifyForm.hidden = false;
+    $("#auth-token").focus();
+    showToast("验证码已发送，请查看邮箱。", "success", "ph-paper-plane-tilt");
+  } catch (error) {
+    showToast(error.message || "验证码发送失败", "error", "ph-warning-circle");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function verifyAuthCode(event) {
+  event.preventDefault();
+  const email = state.authEmail || $("#auth-email").value.trim();
+  const token = $("#auth-token").value.trim();
+  if (!email || !token) return;
+  const button = event.submitter;
+  button.disabled = true;
+  try {
+    const { data, error } = await state.client.auth.verifyOtp({ email, token, type: "email" });
+    if (error) throw error;
+    state.user = data.user;
+    const resolver = state.authResolver;
+    state.authResolver = null;
+    await loadCurrentProfile();
+    if (isDefaultProfileName(state.profile?.display_name)) {
+      closeLayer("auth");
+      await openProfileDialog(true);
+    }
+    await loadCommunities();
+    if (state.pendingInviteToken) await joinInviteFromUrl();
+    closeLayer("auth");
+    resolver?.(true);
+    showToast("登录成功，欢迎回到小窝。", "success", "ph-check-circle");
+    await refreshFeed();
+    await loadCalendarPosts();
+  } catch (error) {
+    showToast(error.message || "验证码不正确", "error", "ph-warning-circle");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function ensureIdentity() {
+  if (!state.backend) {
+    showToast("当前是静态示例模式，连接 Supabase 后才能创建社区和互动。", "error", "ph-cloud-slash");
+    return false;
+  }
+  if (!isLoggedInUser()) {
+    const ok = await openAuthDialog(true, "先用邮箱登录，再创建社区、加入朋友的小窝或发布记录。");
+    if (!ok) return false;
+  }
+  if (!state.profile) await loadCurrentProfile();
+  if (isDefaultProfileName(state.profile?.display_name)) return openProfileDialog(true);
+  return true;
+}
+
+async function createCommunity(event) {
+  event.preventDefault();
+  if (!(await ensureIdentity())) return;
+  const name = $("#community-name").value.trim();
+  const description = $("#community-desc").value.trim();
+  if (!name) return;
+  const button = event.submitter;
+  button.disabled = true;
+  try {
+    const { data, error } = await state.client.from("communities").insert({
+      name,
+      description,
+      owner_id: state.user.id,
+      avatar_seed: crypto.randomUUID()
+    }).select("id,name,description,avatar_seed,owner_id,created_at").single();
+    if (error) throw error;
+    closeLayer("community");
+    els.communityForm.reset();
+    await loadCommunities();
+    await setActiveCommunity(data.id);
+    showToast("小猪社区创建好了，可以邀请朋友了。", "success", "ph-check-circle");
+  } catch (error) {
+    showToast(error.message || "社区创建失败", "error", "ph-warning-circle");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function openCommunityDialog() {
+  if (!(await ensureIdentity())) return;
+  openLayer("community");
+}
+
+async function getOrCreateInvite() {
+  if (!state.activeCommunityId || !(await ensureIdentity())) return "";
+  let { data, error } = await state.client
+    .from("community_invites")
+    .select("token")
+    .eq("community_id", state.activeCommunityId)
+    .eq("enabled", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.token) {
+    const inserted = await state.client.from("community_invites").insert({
+      community_id: state.activeCommunityId,
+      created_by: state.user.id
+    }).select("token").single();
+    if (inserted.error) throw inserted.error;
+    data = inserted.data;
+  }
+  return data.token;
+}
+
+async function copyInviteLink() {
+  if (!state.activeCommunityId) return showToast("先进入一个社区，再邀请朋友。", "error", "ph-house-line");
+  try {
+    const token = await getOrCreateInvite();
+    const url = `${location.origin}${location.pathname}?invite=${encodeURIComponent(token)}`;
+    await navigator.clipboard.writeText(url);
+    showToast("邀请链接已复制，发给朋友就能加入。", "success", "ph-link-simple");
+  } catch (error) {
+    showToast(error.message || "邀请链接生成失败", "error", "ph-warning-circle");
+  }
+}
+
+async function joinInviteFromUrl() {
+  if (!state.pendingInviteToken) return;
+  if (!(await ensureIdentity())) return;
+  const { data, error } = await state.client.rpc("join_community_by_token", { invite_token: state.pendingInviteToken });
+  if (error) {
+    showToast(error.message || "邀请链接不可用", "error", "ph-warning-circle");
+    return;
+  }
+  const joined = Array.isArray(data) ? data[0] : data;
+  state.pendingInviteToken = "";
+  history.replaceState(null, "", `${location.origin}${location.pathname}`);
+  await loadCommunities();
+  if (joined?.id) await setActiveCommunity(joined.id);
+  showToast("已加入朋友的小猪社区。", "success", "ph-users-three");
 }
 
 function renderSkeletons() {
@@ -457,6 +744,7 @@ function mapDbPost(row) {
     legacyKey: row.legacy_key,
     title: row.title,
     body: row.body || "",
+    communityId: row.community_id || null,
     authorId: row.author_id,
     author: profile.display_name || row.author_name || "懂猪帝观察员",
     avatarSeed: profile.avatar_seed || row.avatar_seed || row.id,
@@ -534,11 +822,11 @@ function renderFeed() {
     const count = postsByDate().get(state.selectedDate)?.length || state.posts.length;
     $("#feed-heading").textContent = `${selected.getMonth() + 1}月${selected.getDate()}日 · ${count}条记录`;
   } else {
-    $("#feed-heading").textContent = THEME_COPY[document.body.dataset.theme || "diary"].heading;
+    $("#feed-heading").textContent = state.activeCommunity?.name || "原生小猪示例";
   }
-  els.feedSummary.textContent = state.backend
-    ? `已同步 ${state.posts.length} 条记录${state.selectedDate ? " · 正在按日期回看" : ""}${state.query ? ` · 搜索“${state.query}”` : ""}`
-    : `静态档案 · 已翻到 ${state.posts.length} 条记录`;
+  els.feedSummary.textContent = communityMode()
+    ? `社区同步 · 已显示 ${state.posts.length} 条记录${state.selectedDate ? " · 正在按日期回看" : ""}${state.query ? ` · 搜索“${state.query}”` : ""}`
+    : `示例小猪 · 已翻到 ${state.posts.length} 条记录，创建社区后可以邀请朋友一起发。`;
 }
 
 function staticMatches(post) {
@@ -575,6 +863,7 @@ async function loadStaticPosts(reset = true) {
 
 function applyBackendFilters(query) {
   let result = query.eq("status", "published");
+  if (state.activeCommunityId) result = result.eq("community_id", state.activeCommunityId);
   const cleanSearch = state.query.replace(/[%_,()]/g, " ").trim();
   if (cleanSearch) result = result.or(`title.ilike.%${cleanSearch}%,body.ilike.%${cleanSearch}%,author_name.ilike.%${cleanSearch}%`);
   if (state.tag) result = result.contains("tags", [state.tag]);
@@ -598,7 +887,7 @@ async function loadBackendPosts(reset = true) {
   const to = from + PAGE_SIZE;
   let query = state.client
     .from("posts")
-    .select(`id,legacy_key,title,body,tags,author_id,author_name,avatar_seed,created_at,status,
+    .select(`id,legacy_key,title,body,tags,community_id,author_id,author_name,avatar_seed,created_at,status,
       profile:profiles!posts_author_id_fkey(display_name,avatar_seed,role),
       media:post_media(id,media_kind,public_url,storage_path,poster_url,sort_order),
       comments(count),likes:post_likes(count)`)
@@ -627,7 +916,7 @@ async function refreshFeed() {
   state.loading = true;
   renderSkeletons();
   try {
-    if (state.backend) await loadBackendPosts(true);
+    if (state.backend && communityMode()) await loadBackendPosts(true);
     else await loadStaticPosts(true);
   } catch (error) {
     console.warn(error);
@@ -643,7 +932,7 @@ async function loadMore() {
   state.loading = true;
   els.loadMore.disabled = true;
   try {
-    if (state.backend) await loadBackendPosts(false);
+    if (state.backend && communityMode()) await loadBackendPosts(false);
     else await loadStaticPosts(false);
   } catch (error) {
     showToast(error.message || "加载失败，请再试一次", "error", "ph-warning-circle");
@@ -741,6 +1030,9 @@ function updateDetailActions() {
   $("#detail-like").innerHTML = `<i class="ph${liked ? "-fill" : ""} ph-heart"></i><span>${post.likeCount || 0} 赞</span>`;
   $("#detail-save").classList.toggle("active", saved);
   $("#detail-save").innerHTML = `<i class="ph${saved ? "-fill" : ""} ph-bookmark-simple"></i><span>${saved ? "已收藏" : "收藏"}</span>`;
+  const communityPost = post.source === "db" && post.communityId;
+  $("#detail-like").disabled = !communityPost;
+  $("#detail-report").disabled = post.source !== "db";
 }
 
 async function openPost(post) {
@@ -776,7 +1068,7 @@ async function loadComments(postId) {
 function commentTemplate(comment, replies = []) {
   const profile = comment.profile || {};
   const canEdit = state.user?.id === comment.author_id;
-  const canDelete = canEdit || state.isAdmin;
+  const canDelete = canEdit || state.isAdmin || (state.activePost?.communityId && roleForCommunity(state.activePost.communityId) === "owner");
   return `
     <article class="comment-item" data-comment-id="${escapeHTML(comment.id)}">
       ${avatarHTML(profile.avatar_seed || comment.author_id)}
@@ -814,6 +1106,7 @@ async function submitComment(event) {
   const body = els.commentInput.value.trim();
   if (!body) return;
   if (!(await ensureIdentity())) return;
+  if (!state.activePost?.communityId) return showToast("示例帖只读；进入自己的社区后就能评论。", "info", "ph-chat-circle");
   const payload = {
     post_id: state.activePost.id,
     author_id: state.user.id,
@@ -881,6 +1174,7 @@ async function deleteComment(comment) {
 
 async function createReport(targetType, targetId) {
   if (!(await ensureIdentity())) return;
+  if (targetType === "post" && state.activePost?.source !== "db") return showToast("示例帖暂不需要举报。", "info", "ph-flag");
   const { error } = await state.client.from("reports").insert({
     reporter_id: state.user.id,
     target_type: targetType,
@@ -893,6 +1187,7 @@ async function createReport(targetType, targetId) {
 async function toggleLike() {
   const post = state.activePost;
   if (!post || !(await ensureIdentity())) return;
+  if (!post.communityId) return showToast("示例帖只读；进入自己的社区后就能点赞。", "info", "ph-heart");
   const liked = state.likedPostIds.has(post.id);
   const query = liked
     ? state.client.from("post_likes").delete().eq("post_id", post.id).eq("user_id", state.user.id)
@@ -979,18 +1274,13 @@ async function saveProfile(event) {
   event.preventDefault();
   const name = $("#profile-name").value.trim();
   if (!name) return;
-  if (CONFIG.turnstileSiteKey && !state.captchaToken && !state.user) {
-    showToast("请先完成人机验证", "error", "ph-shield-warning");
-    return;
-  }
   const submit = event.submitter;
   submit.disabled = true;
   try {
     if (!state.user) {
-      const options = state.captchaToken ? { captchaToken: state.captchaToken } : undefined;
-      const { data, error } = await state.client.auth.signInAnonymously({ options });
-      if (error) throw error;
-      state.user = data.user;
+      showToast("请先用邮箱登录，再设置昵称。", "error", "ph-user-circle");
+      submit.disabled = false;
+      return;
     }
     const avatarSeed = $("#profile-avatar-preview").dataset.seed || crypto.randomUUID();
     const { data, error } = await state.client.from("profiles").update({
@@ -1005,21 +1295,12 @@ async function saveProfile(event) {
     state.profileResolver = null;
     closeLayer("profile");
     resolver?.(true);
-    showToast("匿名身份已保存", "success", "ph-check-circle");
+    showToast("社区昵称已保存", "success", "ph-check-circle");
   } catch (error) {
     showToast(error.message || "身份保存失败", "error", "ph-warning-circle");
   } finally {
     submit.disabled = false;
   }
-}
-
-async function ensureIdentity() {
-  if (!state.backend) {
-    showToast("当前是静态浏览模式，配置 Supabase 后即可互动", "error", "ph-cloud-slash");
-    return false;
-  }
-  if (state.user && state.profile?.display_name && state.profile.display_name !== "匿名小猪") return true;
-  return openProfileDialog(true);
 }
 
 function cleanupSelectedFiles() {
@@ -1189,6 +1470,11 @@ async function uploadMedia(postId) {
 async function submitPost(event) {
   event.preventDefault();
   if (!(await ensureIdentity())) return;
+  if (!state.activeCommunityId) {
+    showToast("先创建或进入一个社区，再发布自己的日常。", "error", "ph-house-line");
+    openLayer("community");
+    return;
+  }
   const title = $("#post-title").value.trim();
   const body = $("#post-body").value.trim();
   const tags = $$('input[name="tags"]:checked').map(input => input.value).slice(0, 3);
@@ -1208,6 +1494,7 @@ async function submitPost(event) {
       showToast("日记已经更新", "success", "ph-check-circle");
     } else {
       const { data: post, error } = await state.client.from("posts").insert({
+        community_id: state.activeCommunityId,
         author_id: state.user.id,
         author_name: state.profile.display_name,
         avatar_seed: state.profile.avatar_seed,
@@ -1254,6 +1541,11 @@ function resetPublishForm() {
 
 async function openPublish(post = null) {
   if (!(await ensureIdentity())) return;
+  if (!post && !state.activeCommunityId) {
+    showToast("先创建自己的小猪社区，再记录今天。", "info", "ph-users-three");
+    openLayer("community");
+    return;
+  }
   resetPublishForm();
   state.editingPost = post;
   if (post) {
@@ -1268,9 +1560,11 @@ async function openPublish(post = null) {
 }
 
 async function deletePost(post) {
-  if (!window.confirm(state.isAdmin && post.authorId !== state.user?.id ? "确定隐藏这条帖子吗？" : "确定删除这条帖子及媒体吗？")) return;
+  const owner = post.authorId === state.user?.id;
+  const moderator = !owner && canModeratePost(post);
+  if (!window.confirm(moderator ? "确定隐藏这条帖子吗？" : "确定删除这条帖子及媒体吗？")) return;
   let error;
-  if (state.isAdmin && post.authorId !== state.user?.id) {
+  if (moderator) {
     ({ error } = await state.client.from("posts").update({ status: "hidden" }).eq("id", post.id));
   } else {
     const paths = post.media.map(item => item.storagePath).filter(Boolean);
@@ -1290,7 +1584,7 @@ function showPostMenu(button) {
   const post = state.activePost;
   if (!post) return;
   const owner = state.user?.id === post.authorId;
-  const canModerate = state.isAdmin;
+  const canModerate = canModeratePost(post);
   const actions = [];
   if (owner) actions.push(["edit-post", "ph-pencil-simple", "编辑帖子", ""]);
   if (owner || canModerate) actions.push(["delete-post", "ph-trash", owner ? "删除帖子" : "隐藏帖子", "danger"]);
@@ -1511,19 +1805,35 @@ async function initializeBackend() {
       history.replaceState(null, "", `${location.origin}${location.pathname}?admin=1`);
     }
     let { data: { session } } = await state.client.auth.getSession();
-    if (!session && !CONFIG.turnstileSiteKey && !adminMode) {
-      const { data, error } = await state.client.auth.signInAnonymously();
-      if (error) throw error;
-      session = data.session;
-    }
     state.user = session?.user || null;
-    if (state.user) await loadCurrentProfile();
+    if (state.user) {
+      await loadCurrentProfile();
+      await loadCommunities();
+    } else {
+      renderCommunityControls();
+    }
     state.client.auth.onAuthStateChange((_event, nextSession) => {
       state.user = nextSession?.user || null;
-      if (state.user) window.setTimeout(() => loadCurrentProfile(), 0);
+      window.setTimeout(async () => {
+        if (state.user) {
+          await loadCurrentProfile();
+          await loadCommunities();
+          if (state.pendingInviteToken) await joinInviteFromUrl();
+        } else {
+          state.profile = null;
+          state.isAdmin = false;
+          await loadCommunities();
+        }
+        await refreshFeed();
+        await loadCalendarPosts();
+      }, 0);
     });
     setBackendMode(true);
     subscribeRealtime();
+    if (state.pendingInviteToken) {
+      if (state.user) await joinInviteFromUrl();
+      else openAuthDialog(false, "登录后会自动加入朋友发给你的这个小猪社区。");
+    }
     return true;
   } catch (error) {
     console.warn(error);
@@ -1564,6 +1874,13 @@ function bindEvents() {
   $("#memory-today").addEventListener("click", () => goToToday(false));
   $("#calendar-clear").addEventListener("click", clearCalendarSelection);
   $("#memory-view-day").addEventListener("click", viewDrawerDay);
+  $("#community-create-button")?.addEventListener("click", openCommunityDialog);
+  els.inviteButton?.addEventListener("click", copyInviteLink);
+  els.communitySelect?.addEventListener("change", event => setActiveCommunity(event.target.value));
+  $("#community-switch-button")?.addEventListener("click", () => {
+    if (els.communitySelect && !els.communitySelect.disabled) els.communitySelect.focus();
+    else if (state.backend) openCommunityDialog();
+  });
   els.miniCalendarGrid.addEventListener("click", event => {
     const button = event.target.closest("[data-calendar-date]");
     if (button) selectFeedDate(button.dataset.calendarDate);
@@ -1586,8 +1903,15 @@ function bindEvents() {
     const post = state.calendarPosts.find(value => value.id === item.dataset.memoryPost);
     if (post) openPost(post);
   });
-  $("#profile-button").addEventListener("click", () => state.backend ? openProfileDialog(false) : showToast("配置 Supabase 后即可创建匿名身份", "error", "ph-cloud-slash"));
+  $("#profile-button").addEventListener("click", () => {
+    if (!state.backend) return showToast("配置 Supabase 后即可登录。", "error", "ph-cloud-slash");
+    if (!isLoggedInUser()) return openAuthDialog(false, "登录后就可以创建社区、加入邀请和发布日常。");
+    return openProfileDialog(false);
+  });
   $("#admin-entry").addEventListener("click", openAdmin);
+  els.authLoginForm?.addEventListener("submit", sendAuthCode);
+  els.authVerifyForm?.addEventListener("submit", verifyAuthCode);
+  els.communityForm?.addEventListener("submit", createCommunity);
   $("#admin-login-form").addEventListener("submit", sendAdminLink);
   $("#admin-verify-form").addEventListener("submit", verifyAdminCode);
   els.publishForm.addEventListener("submit", submitPost);
