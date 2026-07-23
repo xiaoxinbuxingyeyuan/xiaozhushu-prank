@@ -660,7 +660,14 @@ function renderMedia() {
   const current = media[state.activeMedia];
   els.mediaStage.classList.remove("zoomed");
   if (!current) {
-    els.mediaStage.innerHTML = "";
+    const title = post.title || "今天的文字日记";
+    const body = post.body || "这一天安安静静地被记录下来了。";
+    els.mediaStage.innerHTML = `
+      <article class="text-detail-note" aria-label="纯文字日记预览">
+        <span>TEXT ONLY</span>
+        <h3>${escapeHTML(title)}</h3>
+        <p>${escapeHTML(body)}</p>
+      </article>`;
     els.mediaPrev.hidden = true;
     els.mediaNext.hidden = true;
     els.mediaCount.hidden = true;
@@ -715,7 +722,7 @@ function renderDetail(post) {
   const detailTitle = $("#detail-title");
   const detailBody = $("#detail-body");
   $("#detail-layer").classList.toggle("text-only", !hasMedia);
-  $(".detail-media").hidden = !hasMedia;
+  $(".detail-media").hidden = false;
   detailTitle.textContent = post.title || "";
   detailTitle.hidden = !String(post.title || "").trim();
   detailBody.textContent = post.body || "";
@@ -795,6 +802,11 @@ function renderComments(readOnly = false) {
   $("#comment-count").textContent = `${state.comments.length} 条`;
   els.commentInput.disabled = readOnly;
   els.commentInput.placeholder = readOnly ? "配置 Supabase 后即可评论" : "说点软乎乎的话……";
+  updateCommentSubmitState();
+}
+
+function updateCommentSubmitState() {
+  $(".comment-submit").disabled = els.commentInput.disabled || !els.commentInput.value.trim();
 }
 
 async function submitComment(event) {
@@ -818,6 +830,7 @@ async function submitComment(event) {
     return;
   }
   els.commentInput.value = "";
+  updateCommentSubmitState();
   clearReply();
   await loadComments(state.activePost.id);
   state.activePost.commentCount = state.comments.length;
@@ -1439,6 +1452,7 @@ function bindEvents() {
   els.publishForm.addEventListener("submit", submitPost);
   els.profileForm.addEventListener("submit", saveProfile);
   $("#comment-form").addEventListener("submit", submitComment);
+  els.commentInput.addEventListener("input", updateCommentSubmitState);
   $("#reply-cancel").addEventListener("click", clearReply);
   els.mediaPrev.addEventListener("click", () => changeMedia(-1));
   els.mediaNext.addEventListener("click", () => changeMedia(1));
