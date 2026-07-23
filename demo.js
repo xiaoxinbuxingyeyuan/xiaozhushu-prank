@@ -68,7 +68,6 @@ const state = {
   activeCommunity: null,
   pendingInviteToken: new URLSearchParams(location.search).get("invite") || "",
   authResolver: null,
-  authEmail: "",
   posts: [],
   staticPosts: [],
   page: 0,
@@ -126,7 +125,9 @@ const els = {
   uploadProgress: $("#upload-progress"),
   authLayer: $("#auth-layer"),
   authLoginForm: $("#auth-login-form"),
-  authVerifyForm: $("#auth-verify-form"),
+  authRegisterForm: $("#auth-register-form"),
+  authRecoverForm: $("#auth-recover-form"),
+  authResetForm: $("#auth-reset-form"),
   communityLayer: $("#community-layer"),
   communityForm: $("#community-form"),
   communitySelect: $("#community-select"),
@@ -536,13 +537,35 @@ async function setActiveCommunity(id = "") {
   await loadCalendarPosts();
 }
 
-function openAuthDialog(required = false, copy = "") {
+function setAuthMode(mode = "login") {
+  $$(".auth-tabs button").forEach(button => button.classList.toggle("active", button.dataset.authMode === mode));
+  $$("[data-auth-panel]").forEach(panel => panel.classList.toggle("active", panel.dataset.authPanel === mode));
+  if (mode === "account") updateAccountPanel();
+  const focusTarget = {
+    login: "#auth-login-email",
+    register: "#auth-register-name",
+    recover: "#auth-recover-email",
+    reset: "#auth-new-password",
+    account: "#account-edit-profile"
+  }[mode];
+  window.setTimeout(() => $(focusTarget)?.focus(), 80);
+}
+
+function updateAccountPanel() {
+  const avatar = $("#account-avatar");
+  const seed = state.profile?.avatar_seed || state.user?.id || "account-pig";
+  avatar?.setAttribute("style", avatarPalette(seed));
+  if (avatar) avatar.innerHTML = `<i class="ph-fill ph-piggy-bank"></i>`;
+  $("#account-name").textContent = state.profile?.display_name || "小猪用户";
+  $("#account-email").textContent = state.user?.email || "未读取邮箱";
+}
+
+function openAuthDialog(required = false, copy = "", mode = "login") {
   if (copy) $("#auth-copy").textContent = copy;
-  if (!required) {
-    openLayer("auth");
-    return true;
-  }
+  if (state.user && !required && mode === "login") mode = "account";
+  setAuthMode(mode);
   openLayer("auth");
+  if (!required) return true;
   return new Promise(resolve => { state.authResolver = resolve; });
 }
 
@@ -553,63 +576,148 @@ function authRedirectUrl() {
   return `${location.origin}${location.pathname}${query ? `?${query}` : ""}`;
 }
 
-async function sendAuthCode(event) {
+async function completeAuthFlow(message = "登录成功，欢迎回到小窝。") {
+  const resolver = state.authResolver;
+  state.authResolver = null;
+  await loadCurrentProfile();
+  if (isDefaultProfileName(state.profile?.display_name)) {
+    closeLayer("auth");
+    await openProfileDialog(true);
+  }
+  await loadCommunities();
+  if (state.pendingInviteToken) await joinInviteFromUrl();
+  closeLayer("auth");
+  resolver?.(true);
+  showToast(message, "success", "ph-check-circle");
+  await refreshFeed();
+  await loadCalendarPosts();
+}
+
+async function loginWithPassword(event) {
   event.preventDefault();
   if (!state.backend) return showToast("Supabase 还没有连接，暂时不能登录。", "error", "ph-cloud-slash");
-  const email = $("#auth-email").value.trim();
-  if (!email) return;
-  const button = event.submitter || $("#auth-send-button");
+  const email = $("#auth-login-email").value.trim();
+  const password = $("#auth-login-password").value;
+  if (!email || !password) return;
+  const button = event.submitter || $("#auth-login-button");
   button.disabled = true;
   try {
-    const { error } = await state.client.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: authRedirectUrl(),
-        shouldCreateUser: true
-      }
-    });
+    const { data, error } = await state.client.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    state.authEmail = email;
-    els.authVerifyForm.hidden = false;
-    $("#auth-token").focus();
-    showToast("登录邮件已发送：收到链接就点链接，收到验证码就填这里。", "success", "ph-paper-plane-tilt");
+    state.user = data.user;
+    await completeAuthFlow("登录成功，欢迎回到小窝。");
   } catch (error) {
-    showToast(error.message || "验证码发送失败", "error", "ph-warning-circle");
+    const message = error.message?.toLowerCase().includes("invalid")
+      ? "邮箱或密码不正确。忘记密码的话，可以用邮箱找回。"
+      : error.message || "登录失败";
+    showToast(message, "error", "ph-warning-circle");
   } finally {
     button.disabled = false;
   }
 }
 
-async function verifyAuthCode(event) {
+async function registerWithPassword(event) {
   event.preventDefault();
-  const email = state.authEmail || $("#auth-email").value.trim();
-  const token = $("#auth-token").value.trim();
-  if (!email || !token) return;
-  const button = event.submitter;
+  if (!state.backend) return showToast("Supabase 还没有连接，暂时不能注册。", "error", "ph-cloud-slash");
+  const displayName = $("#auth-register-name").value.trim();
+  const email = $("#auth-register-email").value.trim();
+  const password = $("#auth-register-password").value;
+  const confirm = $("#auth-register-confirm").value;
+  if (password !== confirm) return showToast("两次输入的密码不一致", "error", "ph-warning-circle");
+  const button = event.submitter || $("#auth-register-button");
   button.disabled = true;
   try {
-    const { data, error } = await state.client.auth.verifyOtp({ email, token, type: "email" });
+    const { data, error } = await state.client.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: authRedirectUrl(),
+        data: { display_name: displayName, avatar_seed: crypto.randomUUID() }
+      }
+    });
     if (error) throw error;
-    state.user = data.user;
-    const resolver = state.authResolver;
-    state.authResolver = null;
-    await loadCurrentProfile();
-    if (isDefaultProfileName(state.profile?.display_name)) {
-      closeLayer("auth");
-      await openProfileDialog(true);
+    if (data.session?.user) {
+      state.user = data.session.user;
+      await loadCurrentProfile();
+      if (displayName && state.profile) {
+        const avatarSeed = state.profile.avatar_seed || data.user.id;
+        const { data: profile } = await state.client.from("profiles").update({
+          display_name: displayName,
+          avatar_seed: avatarSeed
+        }).eq("id", data.user.id).select("id,display_name,avatar_seed,role").single();
+        if (profile) state.profile = profile;
+      }
+      await completeAuthFlow("注册成功，小窝钥匙已经交到你手里。");
+    } else {
+      showToast("注册邮件已发送，请先去邮箱确认账号，再用密码登录。", "success", "ph-envelope-simple");
+      setAuthMode("login");
+      $("#auth-login-email").value = email;
     }
-    await loadCommunities();
-    if (state.pendingInviteToken) await joinInviteFromUrl();
-    closeLayer("auth");
-    resolver?.(true);
-    showToast("登录成功，欢迎回到小窝。", "success", "ph-check-circle");
-    await refreshFeed();
-    await loadCalendarPosts();
   } catch (error) {
-    showToast(error.message || "验证码不正确", "error", "ph-warning-circle");
+    showToast(error.message || "注册失败", "error", "ph-warning-circle");
   } finally {
     button.disabled = false;
   }
+}
+
+async function sendPasswordRecovery(event) {
+  event.preventDefault();
+  if (!state.backend) return showToast("Supabase 还没有连接，暂时不能找回密码。", "error", "ph-cloud-slash");
+  const email = $("#auth-recover-email").value.trim();
+  if (!email) return;
+  const button = event.submitter || $("#auth-recover-button");
+  button.disabled = true;
+  try {
+    const { error } = await state.client.auth.resetPasswordForEmail(email, {
+      redirectTo: `${authRedirectUrl()}${authRedirectUrl().includes("?") ? "&" : "?"}recovery=1`
+    });
+    if (error) throw error;
+    showToast("重置密码邮件已发送，点开邮件里的链接即可设置新密码。", "success", "ph-paper-plane-tilt");
+  } catch (error) {
+    showToast(error.message || "重置邮件发送失败", "error", "ph-warning-circle");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function updatePasswordFromRecovery(event) {
+  event.preventDefault();
+  const password = $("#auth-new-password").value;
+  const confirm = $("#auth-new-confirm").value;
+  if (password !== confirm) return showToast("两次输入的新密码不一致", "error", "ph-warning-circle");
+  const button = event.submitter || $("#auth-reset-button");
+  button.disabled = true;
+  try {
+    const { error } = await state.client.auth.updateUser({ password });
+    if (error) throw error;
+    const cleanParams = new URLSearchParams(location.search);
+    cleanParams.delete("recovery");
+    const cleanQuery = cleanParams.toString();
+    history.replaceState(null, "", `${location.origin}${location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
+    showToast("新密码已保存，以后就可以用它登录了。", "success", "ph-lock-key-open");
+    setAuthMode("account");
+  } catch (error) {
+    showToast(error.message || "密码保存失败", "error", "ph-warning-circle");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function signOutAndSwitch() {
+  if (!state.client) return;
+  await state.client.auth.signOut();
+  state.user = null;
+  state.profile = null;
+  state.isAdmin = false;
+  state.communities = [];
+  state.activeCommunityId = "";
+  state.activeCommunity = null;
+  localStorage.removeItem(COMMUNITY_KEY);
+  renderCommunityControls();
+  await refreshFeed();
+  await loadCalendarPosts();
+  setAuthMode("login");
+  showToast("已退出，可以切换另一个账号。", "success", "ph-arrows-clockwise");
 }
 
 async function ensureIdentity() {
@@ -1297,6 +1405,7 @@ async function saveProfile(event) {
     state.profile = data;
     state.isAdmin = data.role === "admin";
     updateProfileButton();
+    updateAccountPanel();
     const resolver = state.profileResolver;
     state.profileResolver = null;
     closeLayer("profile");
@@ -1802,6 +1911,7 @@ async function initializeBackend() {
   try {
     const params = new URLSearchParams(location.search);
     const adminMode = params.has("admin");
+    const recoveryMode = params.has("recovery");
     state.client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
@@ -1811,6 +1921,7 @@ async function initializeBackend() {
       const cleanParams = new URLSearchParams();
       if (adminMode) cleanParams.set("admin", "1");
       if (state.pendingInviteToken) cleanParams.set("invite", state.pendingInviteToken);
+      if (recoveryMode) cleanParams.set("recovery", "1");
       const cleanQuery = cleanParams.toString();
       history.replaceState(null, "", `${location.origin}${location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`);
     }
@@ -1844,6 +1955,7 @@ async function initializeBackend() {
       if (state.user) await joinInviteFromUrl();
       else openAuthDialog(false, "登录后会自动加入朋友发给你的这个小猪社区。");
     }
+    if (recoveryMode && state.user) openAuthDialog(false, "设置一个新密码，以后就可以直接用账号密码登录。", "reset");
     return true;
   } catch (error) {
     console.warn(error);
@@ -1915,12 +2027,17 @@ function bindEvents() {
   });
   $("#profile-button").addEventListener("click", () => {
     if (!state.backend) return showToast("配置 Supabase 后即可登录。", "error", "ph-cloud-slash");
-    if (!isLoggedInUser()) return openAuthDialog(false, "登录后就可以创建社区、加入邀请和发布日常。");
-    return openProfileDialog(false);
+    return openAuthDialog(false, isLoggedInUser() ? "这里是你的猪猪通行证，可以修改资料或切换账号。" : "登录后就可以创建社区、加入邀请和发布日常。", isLoggedInUser() ? "account" : "login");
   });
   $("#admin-entry").addEventListener("click", openAdmin);
-  els.authLoginForm?.addEventListener("submit", sendAuthCode);
-  els.authVerifyForm?.addEventListener("submit", verifyAuthCode);
+  $$(".auth-tabs [data-auth-mode], .text-link[data-auth-mode]").forEach(button => button.addEventListener("click", () => setAuthMode(button.dataset.authMode)));
+  els.authLoginForm?.addEventListener("submit", loginWithPassword);
+  els.authRegisterForm?.addEventListener("submit", registerWithPassword);
+  els.authRecoverForm?.addEventListener("submit", sendPasswordRecovery);
+  els.authResetForm?.addEventListener("submit", updatePasswordFromRecovery);
+  $("#account-edit-profile")?.addEventListener("click", () => { closeLayer("auth"); openProfileDialog(false); });
+  $("#account-switch")?.addEventListener("click", signOutAndSwitch);
+  $("#account-logout")?.addEventListener("click", async () => { await signOutAndSwitch(); closeLayer("auth"); });
   els.communityForm?.addEventListener("submit", createCommunity);
   $("#admin-login-form").addEventListener("submit", sendAdminLink);
   $("#admin-verify-form").addEventListener("submit", verifyAdminCode);

@@ -1554,6 +1554,28 @@ body[data-theme="dream"] .detail-modal {
 .small-dialog form { text-align: left; }
 .small-dialog .lab-primary-button { width: 100%; justify-content: center; margin-top: 16px; }
 .inline-form { gap: 8px; }
+.account-dialog { width: min(500px,100%); text-align: left; }
+.account-dialog .profile-preview { margin: 0; }
+.account-dialog h2,
+.account-dialog > p,
+.account-dialog .panel-kicker { text-align: center; }
+.account-stamp { display: grid; place-items: center; gap: 8px; margin: 0 auto 10px; width: max-content; color: var(--muted); font-size: 12px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.auth-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 18px 0; padding: 6px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.54); }
+.auth-tabs button { min-height: 40px; border-radius: 999px; color: var(--muted); background: transparent; font-weight: 900; }
+.auth-tabs button.active { color: var(--ink); background: #fff; box-shadow: 0 10px 24px rgba(43,35,30,.1); }
+.auth-panel { display: none; }
+.auth-panel.active { display: block; animation: panelPop .18s ease both; }
+.account-dialog input { min-height: 48px; font-weight: 700; }
+.account-dialog input:focus { border-color: color-mix(in srgb, var(--accent), white 18%); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2), transparent 45%); outline: none; }
+.text-link { display: block; width: 100%; margin: 12px auto 0; padding: 8px; color: var(--accent); background: transparent; font-weight: 900; text-align: center; }
+.text-link.danger { color: #b94646; }
+.account-hint { margin: 12px 0 0; padding: 12px 14px; border: 1px dashed color-mix(in srgb,var(--accent),transparent 35%); border-radius: 16px; color: var(--muted); background: rgba(255,255,255,.45); font-size: 13px; line-height: 1.7; }
+.account-card { display: flex; align-items: center; gap: 13px; margin: 8px 0 14px; padding: 15px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(135deg, rgba(255,255,255,.72), color-mix(in srgb, var(--accent-2), white 72%)); box-shadow: 0 16px 38px rgba(43,35,30,.08); }
+.account-card .avatar { width: 54px; height: 54px; flex: 0 0 54px; font-size: 24px; }
+.account-card strong { display: block; font-size: 18px; }
+.account-card small { display: block; margin-top: 4px; color: var(--muted); word-break: break-all; }
+.account-actions { display: grid; gap: 9px; }
+.account-actions .lab-icon-button { width: 100%; justify-content: center; }
 .admin-verify-form { margin-top: 14px; }
 #admin-token { text-align: center; letter-spacing: .28em; font-weight: 900; }
 .admin-login-help { margin: 14px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
@@ -1624,6 +1646,17 @@ body.modal-open {
   }
   50% {
     translate: 0 -7px;
+  }
+}
+
+@keyframes panelPop {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -1833,6 +1866,10 @@ body.modal-open {
   .date-filter { width: max-content; }
   .lab-icon-button span,.lab-primary-button span,.calendar-trigger span { display: none; }
   .lab-icon-button,.lab-primary-button,.calendar-trigger { width: 44px; padding: 0; justify-content: center; }
+  .account-dialog .lab-icon-button span,
+  .account-dialog .lab-primary-button span { display: inline; }
+  .account-dialog .lab-icon-button,
+  .account-dialog .lab-primary-button { width: 100%; padding: 0 16px; }
   .publish-dialog,.small-dialog,.admin-dialog { padding: 20px; border-radius: 24px; }
   .dialog-layer:not(#detail-layer) { padding: 10px; }
   .media-previews { grid-template-columns: repeat(3,1fr); }
